@@ -28,3 +28,5 @@ export type {
   MigrationStep,
   DatabaseStatus,
 } from './types.js';
+
+export { prismaAdapter, drizzleAdapter, typeormAdapter } from './adapters/index.js';
