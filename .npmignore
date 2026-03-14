@@ -1,0 +1,21 @@
+# Source & config
+src/
+tests/
+tsconfig.json
+vitest.config.ts
+eslint.config.js
+
+# CI & repo
+.github/
+.idea/
+docs/
+examples/
+
+# Project files
+CHANGELOG.md
+CODE_OF_CONDUCT.md
+CONTRIBUTING.md
+SECURITY.md
+
+# OS
+.DS_Store
