@@ -1,3 +1,10 @@
+/**
+ * @module cli/commands/explain
+ * CLI command that provides a detailed human-readable or JSON explanation
+ * of a specific capability, invariant, or module, including its relationships
+ * to other specs in the system.
+ */
+
 import * as path from 'node:path';
 import * as process from 'node:process';
 import { parseSpecDirectory } from '../../spec/index.js';
@@ -214,6 +221,18 @@ function explainModuleJSON(mod: ModuleSpec, specs: SystemSpecs): Record<string, 
   };
 }
 
+/**
+ * Explains a capability, invariant, or module by displaying its full spec
+ * details and cross-references to related specs (policies, invariants,
+ * entities, modules, etc.).
+ *
+ * @param cwd - Current working directory (project root).
+ * @param type - Spec type to explain: `'capability'`, `'invariant'`, or `'module'`.
+ * @param name - Name of the spec entry to explain.
+ * @param config - Resolved SysMARA project configuration.
+ * @param jsonMode - When `true`, outputs a structured JSON object instead of formatted text.
+ * @throws Exits the process with code 1 if the type is invalid or the named spec is not found.
+ */
 export async function commandExplain(
   cwd: string,
   type: string,

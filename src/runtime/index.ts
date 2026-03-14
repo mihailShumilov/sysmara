@@ -1,3 +1,9 @@
+/**
+ * @module runtime
+ * Public API barrel for the SysMARA runtime layer. Re-exports the HTTP server,
+ * router, configuration utilities, structured error classes, and logger.
+ */
+
 export { Router } from './router.js';
 export type { Route, Handler } from './router.js';
 

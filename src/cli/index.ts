@@ -1,4 +1,10 @@
 #!/usr/bin/env node
+/**
+ * @module cli
+ * Entry point for the `sysmara` CLI. Parses command-line arguments, resolves
+ * project configuration, and dispatches to the appropriate sub-command handler
+ * (init, add, validate, build, graph, compile, doctor, check, explain, impact, plan).
+ */
 
 import * as path from 'node:path';
 import * as process from 'node:process';
@@ -15,6 +21,7 @@ import { commandImpact } from './commands/impact.js';
 import { commandPlanCreate, commandPlanShow } from './commands/plan.js';
 import { commandCheckBoundaries } from './commands/check.js';
 
+/** Current CLI version string, displayed by `--version`. */
 const VERSION = '0.2.0';
 
 function printHelp(): void {

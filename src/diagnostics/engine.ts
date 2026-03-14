@@ -1,3 +1,13 @@
+/**
+ * @module diagnostics/engine
+ *
+ * Core diagnostics engine for Sysmara system specifications. Performs six
+ * categories of validation checks (AX1xx through AX6xx) covering duplicate
+ * names, reference resolution, boundary violations, orphan detection,
+ * safety/manifest consistency, and general consistency rules. All checks
+ * are aggregated into a single {@link DiagnosticsReport}.
+ */
+
 import type {
   SystemSpecs,
   GeneratedManifest,
@@ -604,6 +614,30 @@ function checkConsistency(specs: SystemSpecs): Diagnostic[] {
 
 // ── Main Engine ─────────────────────────────────────────────────────
 
+/**
+ * Runs all diagnostic checks against the given system specifications and
+ * returns a consolidated report.
+ *
+ * The following check categories are executed in order:
+ * - **AX1xx** - Duplicate name detection across entities, capabilities, policies, invariants, modules, and flows.
+ * - **AX2xx** - Reference resolution ensuring all cross-references (e.g., capability to entity) resolve to defined items.
+ * - **AX3xx** - Module boundary violations including circular dependencies, forbidden dependency usage, and cross-boundary entity access.
+ * - **AX4xx** - Orphan detection for entities and capabilities not assigned to modules, and policies without valid capability targets.
+ * - **AX5xx** - Safety checks validating consistency between safe-edit-zone declarations and the generated manifest.
+ * - **AX6xx** - Consistency checks for conflicting or self-referencing module dependency declarations.
+ *
+ * @param specs - The full system specification to validate.
+ * @param manifest - An optional generated manifest used for safety checks (AX5xx). If omitted, safety checks are skipped.
+ * @returns A {@link DiagnosticsReport} containing all diagnostics, counts by severity, and a timestamp.
+ *
+ * @example
+ * ```ts
+ * const report = runDiagnostics(specs, manifest);
+ * if (report.totalErrors > 0) {
+ *   console.error(`Found ${report.totalErrors} error(s)`);
+ * }
+ * ```
+ */
 export function runDiagnostics(
   specs: SystemSpecs,
   manifest?: GeneratedManifest,

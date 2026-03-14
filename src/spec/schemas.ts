@@ -1,7 +1,16 @@
+/**
+ * @module spec/schemas
+ *
+ * Zod validation schemas for all Sysmara specification types.
+ * Each schema corresponds to a TypeScript interface in `types/index.ts`
+ * and is used to validate YAML spec files at parse time.
+ */
+
 import { z } from 'zod';
 
 // ── Field Constraint ──
 
+/** Zod schema for validating {@link FieldConstraint} objects. */
 export const fieldConstraintSchema = z.object({
   type: z.enum(['min', 'max', 'minLength', 'maxLength', 'pattern', 'enum', 'unique']),
   value: z.union([z.string(), z.number(), z.array(z.string())]),
@@ -10,6 +19,7 @@ export const fieldConstraintSchema = z.object({
 
 // ── Entity ──
 
+/** Zod schema for validating {@link EntityField} objects. */
 export const entityFieldSchema = z.object({
   name: z.string(),
   type: z.string(),
@@ -18,6 +28,7 @@ export const entityFieldSchema = z.object({
   constraints: z.array(fieldConstraintSchema).optional(),
 });
 
+/** Zod schema for validating {@link EntitySpec} objects. */
 export const entitySpecSchema = z.object({
   name: z.string(),
   description: z.string(),
@@ -28,6 +39,7 @@ export const entitySpecSchema = z.object({
 
 // ── Capability ──
 
+/** Zod schema for validating {@link CapabilityField} objects. */
 export const capabilityFieldSchema = z.object({
   name: z.string(),
   type: z.string(),
@@ -35,6 +47,7 @@ export const capabilityFieldSchema = z.object({
   description: z.string().optional(),
 });
 
+/** Zod schema for validating {@link CapabilitySpec} objects. */
 export const capabilitySpecSchema = z.object({
   name: z.string(),
   description: z.string(),
@@ -50,12 +63,14 @@ export const capabilitySpecSchema = z.object({
 
 // ── Policy ──
 
+/** Zod schema for validating {@link PolicyCondition} objects. */
 export const policyConditionSchema = z.object({
   field: z.string(),
   operator: z.enum(['eq', 'neq', 'in', 'not_in', 'exists', 'is_owner', 'has_role']),
   value: z.union([z.string(), z.array(z.string())]),
 });
 
+/** Zod schema for validating {@link PolicySpec} objects. */
 export const policySpecSchema = z.object({
   name: z.string(),
   description: z.string(),
@@ -67,6 +82,7 @@ export const policySpecSchema = z.object({
 
 // ── Invariant ──
 
+/** Zod schema for validating {@link InvariantSpec} objects. */
 export const invariantSpecSchema = z.object({
   name: z.string(),
   description: z.string(),
@@ -78,6 +94,7 @@ export const invariantSpecSchema = z.object({
 
 // ── Module ──
 
+/** Zod schema for validating {@link ModuleSpec} objects. */
 export const moduleSpecSchema = z.object({
   name: z.string(),
   description: z.string(),
@@ -90,6 +107,7 @@ export const moduleSpecSchema = z.object({
 
 // ── Flow ──
 
+/** Zod schema for validating {@link FlowStep} objects. */
 export const flowStepSchema = z.object({
   name: z.string(),
   action: z.string(),
@@ -98,6 +116,7 @@ export const flowStepSchema = z.object({
   condition: z.string().optional(),
 });
 
+/** Zod schema for validating {@link FlowSpec} objects. */
 export const flowSpecSchema = z.object({
   name: z.string(),
   description: z.string(),
@@ -108,8 +127,10 @@ export const flowSpecSchema = z.object({
 
 // ── Safe Edit Zone ──
 
+/** Zod schema for validating {@link EditZone} values. */
 export const editZoneSchema = z.enum(['generated', 'editable', 'protected', 'human-review-only']);
 
+/** Zod schema for validating {@link SafeEditZoneSpec} objects. */
 export const safeEditZoneSpecSchema = z.object({
   path: z.string(),
   zone: editZoneSchema,
@@ -119,6 +140,7 @@ export const safeEditZoneSpecSchema = z.object({
 
 // ── Glossary ──
 
+/** Zod schema for validating {@link GlossaryTerm} objects. */
 export const glossaryTermSchema = z.object({
   term: z.string(),
   definition: z.string(),
@@ -127,6 +149,7 @@ export const glossaryTermSchema = z.object({
 
 // ── System Specs ──
 
+/** Zod schema for validating the complete {@link SystemSpecs} object. */
 export const systemSpecsSchema = z.object({
   entities: z.array(entitySpecSchema),
   capabilities: z.array(capabilitySpecSchema),
@@ -140,8 +163,10 @@ export const systemSpecsSchema = z.object({
 
 // ── Diagnostics ──
 
+/** Zod schema for validating {@link DiagnosticSeverity} values. */
 export const diagnosticSeveritySchema = z.enum(['error', 'warning', 'info']);
 
+/** Zod schema for validating {@link Diagnostic} objects. */
 export const diagnosticSchema = z.object({
   code: z.string(),
   severity: diagnosticSeveritySchema,
@@ -151,6 +176,7 @@ export const diagnosticSchema = z.object({
   suggestion: z.string().optional(),
 });
 
+/** Zod schema for validating {@link DiagnosticsReport} objects. */
 export const diagnosticsReportSchema = z.object({
   timestamp: z.string(),
   totalErrors: z.number(),
@@ -161,10 +187,12 @@ export const diagnosticsReportSchema = z.object({
 
 // ── Graph ──
 
+/** Zod schema for validating {@link GraphNodeType} values. */
 export const graphNodeTypeSchema = z.enum([
   'entity', 'capability', 'module', 'policy', 'invariant', 'flow', 'route', 'file',
 ]);
 
+/** Zod schema for validating {@link GraphNode} objects. */
 export const graphNodeSchema = z.object({
   id: z.string(),
   type: graphNodeTypeSchema,
@@ -172,6 +200,7 @@ export const graphNodeSchema = z.object({
   metadata: z.record(z.unknown()),
 });
 
+/** Zod schema for validating {@link GraphEdgeType} values. */
 export const graphEdgeTypeSchema = z.enum([
   'belongs_to',
   'uses_entity',
@@ -185,6 +214,7 @@ export const graphEdgeTypeSchema = z.enum([
   'step_of',
 ]);
 
+/** Zod schema for validating {@link GraphEdge} objects. */
 export const graphEdgeSchema = z.object({
   source: z.string(),
   target: z.string(),
@@ -192,6 +222,7 @@ export const graphEdgeSchema = z.object({
   metadata: z.record(z.unknown()).optional(),
 });
 
+/** Zod schema for validating {@link SystemGraph} objects. */
 export const systemGraphSchema = z.object({
   version: z.string(),
   generatedAt: z.string(),
@@ -199,6 +230,7 @@ export const systemGraphSchema = z.object({
   edges: z.array(graphEdgeSchema),
 });
 
+/** Zod schema for validating {@link SystemMapModule} objects. */
 export const systemMapModuleSchema = z.object({
   name: z.string(),
   entities: z.array(z.string()),
@@ -206,6 +238,7 @@ export const systemMapModuleSchema = z.object({
   dependencies: z.array(z.string()),
 });
 
+/** Zod schema for validating {@link SystemMapCapability} objects. */
 export const systemMapCapabilitySchema = z.object({
   name: z.string(),
   module: z.string(),
@@ -215,6 +248,7 @@ export const systemMapCapabilitySchema = z.object({
   routes: z.array(z.string()),
 });
 
+/** Zod schema for validating {@link SystemMap} objects. */
 export const systemMapSchema = z.object({
   version: z.string(),
   generatedAt: z.string(),
@@ -226,6 +260,7 @@ export const systemMapSchema = z.object({
 
 // ── Impact Surface ──
 
+/** Zod schema for validating {@link ImpactSurface} objects. */
 export const impactSurfaceSchema = z.object({
   target: z.string(),
   targetType: graphNodeTypeSchema,
@@ -241,6 +276,7 @@ export const impactSurfaceSchema = z.object({
 
 // ── Runtime ──
 
+/** Zod schema for validating {@link RouteSpec} objects. */
 export const routeSpecSchema = z.object({
   method: z.enum(['GET', 'POST', 'PUT', 'PATCH', 'DELETE']),
   path: z.string(),
@@ -248,12 +284,14 @@ export const routeSpecSchema = z.object({
   description: z.string().optional(),
 });
 
+/** Zod schema for validating {@link ActorContext} objects. */
 export const actorContextSchema = z.object({
   id: z.string(),
   roles: z.array(z.string()),
   attributes: z.record(z.unknown()),
 });
 
+/** Zod schema for validating {@link HandlerContext} objects. */
 export const handlerContextSchema = z.object({
   params: z.record(z.string()),
   query: z.record(z.string()),
@@ -262,6 +300,7 @@ export const handlerContextSchema = z.object({
   capability: z.string(),
 });
 
+/** Zod schema for validating {@link SysmaraConfig} objects. */
 export const sysmaraConfigSchema = z.object({
   name: z.string(),
   version: z.string(),
@@ -276,6 +315,7 @@ export const sysmaraConfigSchema = z.object({
 
 // ── Generated Manifest ──
 
+/** Zod schema for validating {@link GeneratedFileEntry} objects. */
 export const generatedFileEntrySchema = z.object({
   path: z.string(),
   source: z.string(),
@@ -284,6 +324,7 @@ export const generatedFileEntrySchema = z.object({
   regenerable: z.boolean(),
 });
 
+/** Zod schema for validating {@link GeneratedManifest} objects. */
 export const generatedManifestSchema = z.object({
   generatedAt: z.string(),
   files: z.array(generatedFileEntrySchema),
@@ -291,11 +332,19 @@ export const generatedManifestSchema = z.object({
 
 // ── Collection schemas (for parsing YAML files that contain arrays) ──
 
+/** Zod schema for validating an array of {@link EntitySpec} objects, as found in an entities YAML file. */
 export const entitiesFileSchema = z.array(entitySpecSchema);
+/** Zod schema for validating an array of {@link CapabilitySpec} objects, as found in a capabilities YAML file. */
 export const capabilitiesFileSchema = z.array(capabilitySpecSchema);
+/** Zod schema for validating an array of {@link PolicySpec} objects, as found in a policies YAML file. */
 export const policiesFileSchema = z.array(policySpecSchema);
+/** Zod schema for validating an array of {@link InvariantSpec} objects, as found in an invariants YAML file. */
 export const invariantsFileSchema = z.array(invariantSpecSchema);
+/** Zod schema for validating an array of {@link ModuleSpec} objects, as found in a modules YAML file. */
 export const modulesFileSchema = z.array(moduleSpecSchema);
+/** Zod schema for validating an array of {@link FlowSpec} objects, as found in a flows YAML file. */
 export const flowsFileSchema = z.array(flowSpecSchema);
+/** Zod schema for validating an array of {@link SafeEditZoneSpec} objects, as found in a safe-edit-zones YAML file. */
 export const safeEditZonesFileSchema = z.array(safeEditZoneSpecSchema);
+/** Zod schema for validating an array of {@link GlossaryTerm} objects, as found in a glossary YAML file. */
 export const glossaryFileSchema = z.array(glossaryTermSchema);

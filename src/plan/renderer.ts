@@ -1,3 +1,11 @@
+/**
+ * @module plan/renderer
+ *
+ * Provides rendering utilities for change plans. Supports output in Markdown,
+ * JSON, and plain-text terminal formats. Each renderer converts a {@link ChangePlan}
+ * into a formatted string suitable for different consumption contexts.
+ */
+
 import type { ChangePlan } from '../types/index.js';
 
 function riskBadge(risk: string): string {
@@ -15,6 +23,23 @@ function bulletList(items: string[], indent: number = 0): string {
   return items.map((item) => `${pad}- ${item}`).join('\n');
 }
 
+/**
+ * Renders a change plan as a Markdown document.
+ *
+ * Produces a structured Markdown string with headings for summary, capability changes,
+ * affected entities/modules/policies/invariants/routes, migration notes, generated
+ * artifacts, tests, specs to update, human review flags, rollout notes, and open
+ * questions. Sections with no items are omitted.
+ *
+ * @param plan - The change plan to render.
+ * @returns A Markdown-formatted string representation of the change plan.
+ *
+ * @example
+ * ```ts
+ * const md = renderChangePlanMarkdown(plan);
+ * fs.writeFileSync('plan.md', md);
+ * ```
+ */
 export function renderChangePlanMarkdown(plan: ChangePlan): string {
   const lines: string[] = [];
 
@@ -160,10 +185,32 @@ export function renderChangePlanMarkdown(plan: ChangePlan): string {
   return lines.join('\n');
 }
 
+/**
+ * Renders a change plan as a pretty-printed JSON string.
+ *
+ * @param plan - The change plan to render.
+ * @returns A JSON string representation of the change plan with 2-space indentation.
+ */
 export function renderChangePlanJSON(plan: ChangePlan): string {
   return JSON.stringify(plan, null, 2);
 }
 
+/**
+ * Renders a change plan as a plain-text terminal-friendly string.
+ *
+ * Produces a structured output with box-drawing separators, displaying plan metadata,
+ * capability changes, affected items by category, and list sections (migration notes,
+ * artifacts, tests, specs, review flags, rollout notes, open questions). Sections with
+ * no items are omitted.
+ *
+ * @param plan - The change plan to render.
+ * @returns A multi-line formatted string suitable for terminal/console display.
+ *
+ * @example
+ * ```ts
+ * console.log(renderChangePlanTerminal(plan));
+ * ```
+ */
 export function renderChangePlanTerminal(plan: ChangePlan): string {
   const lines: string[] = [];
   const SEP = '═'.repeat(60);

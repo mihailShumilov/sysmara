@@ -1,3 +1,10 @@
+/**
+ * @module cli/commands/validate
+ * CLI command that validates all SysMARA spec files by parsing them and
+ * running cross-validation to detect broken references, missing fields,
+ * and other structural issues.
+ */
+
 import * as path from 'node:path';
 import * as process from 'node:process';
 import { parseSpecDirectory, crossValidate } from '../../spec/index.js';
@@ -37,6 +44,16 @@ function formatDiagnosticsList(diagnostics: Diagnostic[]): void {
   }
 }
 
+/**
+ * Parses all spec files and runs cross-validation, reporting parse errors,
+ * broken references, and structural issues. Displays a summary table of
+ * spec counts along with categorized diagnostics.
+ *
+ * @param cwd - Current working directory (project root).
+ * @param config - Resolved SysMARA project configuration.
+ * @param jsonMode - When `true`, outputs a structured JSON validation report.
+ * @throws Exits the process with code 1 if parsing fails or validation errors are found.
+ */
 export async function commandValidate(cwd: string, config: SysmaraConfig, jsonMode: boolean): Promise<void> {
   const specDir = path.resolve(cwd, config.specDir);
 

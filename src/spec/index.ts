@@ -1,3 +1,10 @@
+/**
+ * @module spec
+ *
+ * Public API for Sysmara specification parsing and validation.
+ * Re-exports Zod validation schemas, the YAML parser, and the cross-validator.
+ */
+
 export {
   fieldConstraintSchema,
   entityFieldSchema,

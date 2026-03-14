@@ -1,3 +1,11 @@
+/**
+ * @module capability-compiler
+ *
+ * Compiles capability specifications into generated TypeScript route handlers,
+ * test scaffolds, and JSON metadata files. Produces a manifest tracking all
+ * generated artifacts along with diagnostics for unresolved references.
+ */
+
 import { createHash } from 'node:crypto';
 import type {
   SystemSpecs,
@@ -9,12 +17,27 @@ import type {
   Diagnostic,
 } from '../types/index.js';
 
+/**
+ * The result returned by {@link compileCapabilities}.
+ *
+ * @property files - Array of generated file descriptors (route handlers, tests, metadata).
+ * @property manifest - A manifest recording every generated file with its checksum and edit zone.
+ * @property diagnostics - Any errors or warnings discovered during compilation (e.g., undefined entity references).
+ */
 export interface CompilerOutput {
   files: GeneratedFile[];
   manifest: GeneratedManifest;
   diagnostics: Diagnostic[];
 }
 
+/**
+ * Represents a single file produced by the capability compiler.
+ *
+ * @property path - The output file path relative to the output directory.
+ * @property content - The full text content of the generated file.
+ * @property source - A source identifier in the form `capability:<name>` indicating which capability produced this file.
+ * @property zone - The edit zone designation: `"generated"` (do not edit) or `"editable"` (scaffold, safe to modify).
+ */
 export interface GeneratedFile {
   path: string;
   content: string;
@@ -291,6 +314,30 @@ function collectDiagnostics(specs: SystemSpecs): Diagnostic[] {
   return diagnostics;
 }
 
+/**
+ * Compiles all capabilities defined in the system specs into generated artifacts.
+ *
+ * For each capability, three files are produced:
+ * 1. A TypeScript route handler stub (`routes/<name>.ts`) with input/output interfaces (zone: `generated`).
+ * 2. A Vitest test scaffold (`tests/<name>.test.ts`) with placeholder tests for policies and invariants (zone: `editable`).
+ * 3. A JSON metadata file (`metadata/<name>.json`) containing resolved entities, policies, and invariants (zone: `generated`).
+ *
+ * The function also validates that all entity, policy, and invariant references within
+ * capabilities resolve to definitions present in the specs, emitting diagnostics for any
+ * that are missing.
+ *
+ * @param specs - The full system specification containing capabilities, entities, policies, invariants, etc.
+ * @param outputDir - The base directory path under which generated files will be placed.
+ * @returns A {@link CompilerOutput} containing the generated files, a manifest, and any diagnostics.
+ *
+ * @example
+ * ```ts
+ * const output = compileCapabilities(specs, './generated');
+ * for (const file of output.files) {
+ *   await fs.writeFile(file.path, file.content);
+ * }
+ * ```
+ */
 export function compileCapabilities(
   specs: SystemSpecs,
   outputDir: string,

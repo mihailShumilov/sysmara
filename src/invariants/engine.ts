@@ -1,3 +1,11 @@
+/**
+ * @module invariants/engine
+ *
+ * Invariant validation engine for the AI-first framework. Validates invariant
+ * specifications against entity definitions, and resolves which invariants apply
+ * to a given entity or capability.
+ */
+
 import type {
   InvariantSpec,
   EntitySpec,
@@ -5,6 +13,14 @@ import type {
   Diagnostic,
 } from '../types/index.js';
 
+/**
+ * Represents the result of checking a single invariant against an entity.
+ *
+ * @property invariant - The name of the invariant that was checked.
+ * @property entity - The name of the entity the invariant was checked against.
+ * @property passed - Whether the invariant check passed.
+ * @property message - A human-readable message describing the check result.
+ */
 export interface InvariantCheck {
   invariant: string;
   entity: string;
@@ -12,6 +28,27 @@ export interface InvariantCheck {
   message: string;
 }
 
+/**
+ * Validates invariant specifications for correctness and consistency.
+ *
+ * Checks for:
+ * - Duplicate invariant names (produces `INV_DUPLICATE_NAME` errors)
+ * - References to undefined entities (produces `INV_UNDEFINED_ENTITY` errors)
+ * - Invalid severity values (produces `INV_INVALID_SEVERITY` errors; must be `'error'` or `'warning'`)
+ *
+ * @param invariants - The list of invariant specifications to validate.
+ * @param entities - The list of known entity specifications to validate references against.
+ * @returns An array of {@link Diagnostic} objects describing any validation issues found.
+ *   Returns an empty array if all invariants are valid.
+ *
+ * @example
+ * ```ts
+ * const diagnostics = validateInvariantSpecs(specs.invariants, specs.entities);
+ * if (diagnostics.length > 0) {
+ *   console.error('Invariant validation failed:', diagnostics);
+ * }
+ * ```
+ */
 export function validateInvariantSpecs(
   invariants: InvariantSpec[],
   entities: EntitySpec[],
@@ -63,6 +100,21 @@ export function validateInvariantSpecs(
   return diagnostics;
 }
 
+/**
+ * Resolves all invariants that apply to a specific entity by name.
+ *
+ * Filters the full list of invariants to return only those whose `entity` field
+ * matches the given entity name.
+ *
+ * @param entityName - The name of the entity to find invariants for.
+ * @param invariants - The full list of invariant specifications to search.
+ * @returns An array of {@link InvariantSpec} objects that apply to the specified entity.
+ *
+ * @example
+ * ```ts
+ * const orderInvariants = resolveInvariantsForEntity('Order', specs.invariants);
+ * ```
+ */
 export function resolveInvariantsForEntity(
   entityName: string,
   invariants: InvariantSpec[],
@@ -70,6 +122,23 @@ export function resolveInvariantsForEntity(
   return invariants.filter((inv) => inv.entity === entityName);
 }
 
+/**
+ * Resolves all invariants associated with a specific capability.
+ *
+ * Looks up the capability by name, then filters invariants to return only those
+ * listed in the capability's `invariants` array. Returns an empty array if the
+ * capability is not found.
+ *
+ * @param capabilityName - The name of the capability to find invariants for.
+ * @param capabilities - The full list of capability specifications to search.
+ * @param invariants - The full list of invariant specifications to filter.
+ * @returns An array of {@link InvariantSpec} objects referenced by the specified capability.
+ *
+ * @example
+ * ```ts
+ * const capInvariants = resolveInvariantsForCapability('createOrder', specs.capabilities, specs.invariants);
+ * ```
+ */
 export function resolveInvariantsForCapability(
   capabilityName: string,
   capabilities: CapabilitySpec[],

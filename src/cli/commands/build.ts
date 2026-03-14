@@ -1,3 +1,9 @@
+/**
+ * @module cli/commands/build
+ * Full build pipeline for a SysMARA project: parses specs, cross-validates,
+ * generates the system graph and map, compiles capabilities, and runs diagnostics.
+ */
+
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import * as process from 'node:process';
@@ -17,6 +23,21 @@ async function writeFile(filePath: string, content: string): Promise<void> {
   await fs.writeFile(filePath, content, 'utf-8');
 }
 
+/**
+ * Executes the full SysMARA build pipeline:
+ * 1. Parse all YAML spec files
+ * 2. Cross-validate references between specs
+ * 3. Generate `system-graph.json` and `system-map.json`
+ * 4. Compile capabilities into generated TypeScript files
+ * 5. Run diagnostics and produce a report
+ *
+ * Outputs are written to `frameworkDir` and `generatedDir` as configured.
+ *
+ * @param cwd - Current working directory (project root).
+ * @param config - Resolved SysMARA project configuration.
+ * @param jsonMode - When `true`, outputs machine-readable JSON instead of human-friendly text.
+ * @throws Exits the process with code 1 if parsing fails or diagnostics contain errors.
+ */
 export async function commandBuild(cwd: string, config: SysmaraConfig, jsonMode: boolean): Promise<void> {
   const specDir = path.resolve(cwd, config.specDir);
   const frameworkDir = path.resolve(cwd, config.frameworkDir);

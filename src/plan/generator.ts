@@ -1,3 +1,12 @@
+/**
+ * @module plan/generator
+ *
+ * Generates structured change plans from high-level plan requests. Performs impact
+ * analysis for each capability change, collects affected entities/modules/policies/invariants,
+ * classifies risk, and assembles a comprehensive {@link ChangePlan} with review flags,
+ * migration notes, and test coverage information.
+ */
+
 import { createHash } from 'node:crypto';
 import type {
   ChangePlan,
@@ -10,6 +19,22 @@ import type {
 } from '../types/index.js';
 import { analyzeImpact } from '../impact/analyzer.js';
 
+/**
+ * Describes a request to generate a change plan, including the title,
+ * description, optional author, and a list of capability-level changes.
+ *
+ * @property title - Short descriptive title for the change plan.
+ * @property description - Detailed explanation of the intended change.
+ * @property author - Optional author identifier; defaults to `'ai-agent'` if omitted.
+ * @property capabilityChanges - Array of individual capability change descriptors.
+ * @property capabilityChanges[].capability - Name of the capability being changed.
+ * @property capabilityChanges[].action - The type of change: `'add'`, `'modify'`, `'remove'`, or `'rename'`.
+ * @property capabilityChanges[].description - Description of the specific capability change.
+ * @property capabilityChanges[].newEntities - Optional list of new entity names introduced by this change.
+ * @property capabilityChanges[].newPolicies - Optional list of new policy names introduced by this change.
+ * @property capabilityChanges[].newInvariants - Optional list of new invariant names introduced by this change.
+ * @property capabilityChanges[].breakingChange - Optional flag indicating whether this change is breaking.
+ */
 export interface PlanRequest {
   title: string;
   description: string;
@@ -79,6 +104,30 @@ function collectAffectedItems(
   return items.sort((a, b) => a.name.localeCompare(b.name));
 }
 
+/**
+ * Generates a comprehensive change plan by analyzing the impact of each requested
+ * capability change against the system's dependency graph and specifications.
+ *
+ * For each capability change, runs impact analysis to determine affected modules,
+ * entities, policies, invariants, and routes. Classifies the overall risk level,
+ * identifies spec files that need updating, collects human review flags, and
+ * determines which tests and generated artifacts are affected.
+ *
+ * @param request - The plan request describing the intended changes.
+ * @param specs - The current system specifications (entities, capabilities, modules, etc.).
+ * @param graph - The system dependency graph used for impact analysis.
+ * @returns A fully populated {@link ChangePlan} with status `'draft'`.
+ *
+ * @example
+ * ```ts
+ * const plan = generateChangePlan(
+ *   { title: 'Add payments', description: 'Introduce payment capability', capabilityChanges: [...] },
+ *   systemSpecs,
+ *   systemGraph,
+ * );
+ * console.log(`Risk: ${plan.risk}, Impact radius: ${plan.summary.estimatedImpactRadius}`);
+ * ```
+ */
 export function generateChangePlan(
   request: PlanRequest,
   specs: SystemSpecs,
@@ -267,6 +316,22 @@ export function generateChangePlan(
   };
 }
 
+/**
+ * Creates an empty change plan with no capability changes or affected items.
+ *
+ * Useful as a starting point when building a plan incrementally or when
+ * a plan shell is needed before impact analysis is performed.
+ *
+ * @param title - Short descriptive title for the change plan.
+ * @param description - Detailed explanation of the intended change.
+ * @param author - Optional author identifier; defaults to `'ai-agent'` if omitted.
+ * @returns A {@link ChangePlan} with status `'draft'`, risk `'low'`, and all arrays empty.
+ *
+ * @example
+ * ```ts
+ * const plan = createEmptyPlan('Refactor auth', 'Restructure authentication module');
+ * ```
+ */
 export function createEmptyPlan(
   title: string,
   description: string,

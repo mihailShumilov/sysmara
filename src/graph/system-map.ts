@@ -1,3 +1,10 @@
+/**
+ * @module graph/system-map
+ *
+ * Builds a high-level system map from parsed specifications, providing a summary
+ * view of modules, capabilities, entities, and any unresolved references.
+ */
+
 import type {
   SystemSpecs,
   RouteSpec,
@@ -6,6 +13,27 @@ import type {
   SystemMapCapability,
 } from '../types/index.js';
 
+/**
+ * Builds a high-level system map from parsed specifications and optional route definitions.
+ *
+ * The system map provides a summary view that is simpler than the full dependency graph,
+ * organizing information by module and capability. It also tracks unresolved references
+ * (formatted as "type:name") for any cross-references that point to undefined spec elements.
+ *
+ * All lists within the map are sorted alphabetically for deterministic output.
+ *
+ * @param specs - The parsed and validated system specifications
+ * @param routes - Optional array of HTTP route definitions to associate with capabilities
+ * @returns A {@link SystemMap} with version "0.1.0" containing modules, capabilities, entities, and unresolved references
+ *
+ * @example
+ * ```ts
+ * const map = buildSystemMap(specs, routes);
+ * if (map.unresolved.length > 0) {
+ *   console.warn('Unresolved references:', map.unresolved);
+ * }
+ * ```
+ */
 export function buildSystemMap(specs: SystemSpecs, routes?: RouteSpec[]): SystemMap {
   const definedEntities = new Set(specs.entities.map((e) => e.name));
   const definedCapabilities = new Set(specs.capabilities.map((c) => c.name));

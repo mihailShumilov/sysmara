@@ -1,3 +1,9 @@
+/**
+ * @module cli/commands/compile
+ * CLI command that compiles capability specifications into generated TypeScript
+ * source files and a manifest, writing them to the configured output directories.
+ */
+
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import * as process from 'node:process';
@@ -15,6 +21,15 @@ async function writeFile(filePath: string, content: string): Promise<void> {
   await fs.writeFile(filePath, content, 'utf-8');
 }
 
+/**
+ * Parses all specs and runs the capability compiler, writing generated TypeScript
+ * files to `generatedDir` and a manifest to `frameworkDir`.
+ *
+ * @param cwd - Current working directory (project root).
+ * @param config - Resolved SysMARA project configuration.
+ * @param jsonMode - When `true`, outputs machine-readable JSON instead of human-friendly text.
+ * @throws Exits the process with code 1 if spec parsing fails.
+ */
 export async function commandCompile(cwd: string, config: SysmaraConfig, jsonMode: boolean): Promise<void> {
   const specDir = path.resolve(cwd, config.specDir);
   const generatedDir = path.resolve(cwd, config.generatedDir);

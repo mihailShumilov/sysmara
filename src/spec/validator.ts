@@ -1,8 +1,34 @@
+/**
+ * @module spec/validator
+ *
+ * Cross-validates parsed system specifications for referential integrity,
+ * uniqueness constraints, orphan detection, and module dependency cycle detection.
+ * Produces diagnostics for any issues found.
+ */
+
 import type { Diagnostic, SystemSpecs } from '../types/index.js';
 
 /**
- * Cross-validate a fully parsed SystemSpecs, checking referential integrity,
- * uniqueness constraints, cycle detection, and orphan detection.
+ * Cross-validates a fully parsed {@link SystemSpecs} object, checking for:
+ *
+ * - **Uniqueness**: No duplicate names within each spec type (entities, capabilities, etc.)
+ * - **Referential integrity**: All cross-references between specs resolve to defined items
+ *   (e.g., capabilities reference existing entities, policies reference existing capabilities)
+ * - **Orphan detection**: Entities and capabilities not listed in any module
+ * - **Dependency conflicts**: Modules that list the same dependency as both allowed and forbidden
+ * - **Cycle detection**: Circular dependencies in the module dependency graph
+ *
+ * @param specs - The fully parsed system specifications to validate
+ * @returns An array of {@link Diagnostic} messages describing any issues found (empty if valid)
+ *
+ * @example
+ * ```ts
+ * const diagnostics = crossValidate(specs);
+ * const errors = diagnostics.filter(d => d.severity === 'error');
+ * if (errors.length > 0) {
+ *   console.error('Validation failed:', errors);
+ * }
+ * ```
  */
 export function crossValidate(specs: SystemSpecs): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];

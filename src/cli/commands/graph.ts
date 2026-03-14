@@ -1,3 +1,10 @@
+/**
+ * @module cli/commands/graph
+ * CLI command that generates the system dependency graph (`system-graph.json`)
+ * and the system map (`system-map.json`) from parsed specs, writing both to
+ * the framework output directory.
+ */
+
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import * as process from 'node:process';
@@ -15,6 +22,18 @@ async function writeFile(filePath: string, content: string): Promise<void> {
   await fs.writeFile(filePath, content, 'utf-8');
 }
 
+/**
+ * Parses specs and generates two graph files:
+ * - `system-graph.json` — A node/edge dependency graph of all specs.
+ * - `system-map.json` — A module-centric summary with capabilities.
+ *
+ * Both files are written to `frameworkDir`.
+ *
+ * @param cwd - Current working directory (project root).
+ * @param config - Resolved SysMARA project configuration.
+ * @param jsonMode - When `true`, outputs a structured JSON summary instead of human-friendly text.
+ * @throws Exits the process with code 1 if spec parsing fails.
+ */
 export async function commandGraph(cwd: string, config: SysmaraConfig, jsonMode: boolean): Promise<void> {
   const specDir = path.resolve(cwd, config.specDir);
   const frameworkDir = path.resolve(cwd, config.frameworkDir);

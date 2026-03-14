@@ -1,3 +1,12 @@
+/**
+ * @module safety/zone-validator
+ *
+ * Validates safe edit zones and module boundary constraints. Ensures that generated
+ * files match their declared edit zone permissions, and that module dependencies
+ * do not violate boundary rules (forbidden dependencies, cross-module entity access,
+ * circular dependencies).
+ */
+
 import type {
   SafeEditZoneSpec,
   EditZone,
@@ -7,12 +16,40 @@ import type {
   Diagnostic,
 } from '../types/index.js';
 
+/**
+ * Represents a single edit zone violation found during validation.
+ *
+ * @property path - The file path where the violation was detected.
+ * @property expectedZone - The expected edit zone for the file (`'editable'`, `'protected'`, etc.).
+ * @property violation - A human-readable description of the zone mismatch or issue.
+ */
 export interface ZoneViolation {
   path: string;
   expectedZone: EditZone;
   violation: string;
 }
 
+/**
+ * Validates that generated files conform to their declared safe edit zone permissions.
+ *
+ * Performs three checks:
+ * 1. Zone declarations match manifest entries (zone type consistency).
+ * 2. Protected files are not marked as editable in the manifest.
+ * 3. All manifest entries have corresponding zone declarations.
+ *
+ * @param safeEditZones - The declared safe edit zone specifications for known file paths.
+ * @param manifest - The generated file manifest to validate against zone declarations.
+ * @returns An array of {@link ZoneViolation} objects describing any mismatches found.
+ *   Returns an empty array if all zones are consistent.
+ *
+ * @example
+ * ```ts
+ * const violations = validateEditZones(specs.safeEditZones, generatedManifest);
+ * if (violations.length > 0) {
+ *   console.warn('Zone violations found:', violations);
+ * }
+ * ```
+ */
 export function validateEditZones(
   safeEditZones: SafeEditZoneSpec[],
   manifest: GeneratedManifest,
@@ -77,6 +114,31 @@ export function validateEditZones(
   return violations;
 }
 
+/**
+ * Checks for module boundary violations in the system specification.
+ *
+ * Performs three categories of checks:
+ * 1. **Forbidden dependency conflicts** (`BOUNDARY_FORBIDDEN_DEP`): A module lists the same
+ *    dependency in both `allowedDependencies` and `forbiddenDependencies`.
+ * 2. **Cross-module entity access** (`BOUNDARY_CROSS_MODULE_ENTITY`): A capability references
+ *    an entity from a module that is not in the owning module's allowed dependencies.
+ *    Also reports `BOUNDARY_UNDEFINED_MODULE` if a capability's module does not exist.
+ * 3. **Circular dependencies** (`BOUNDARY_CIRCULAR_DEP`): Detects cycles in the module
+ *    dependency graph using DFS.
+ *
+ * @param modules - The list of module specifications defining dependency rules.
+ * @param specs - The full system specifications containing entities and capabilities.
+ * @returns An array of {@link Diagnostic} objects describing any boundary violations found.
+ *   Returns an empty array if no violations are detected.
+ *
+ * @example
+ * ```ts
+ * const diagnostics = checkBoundaryViolations(specs.modules, specs);
+ * for (const d of diagnostics) {
+ *   console.error(`[${d.code}] ${d.message}`);
+ * }
+ * ```
+ */
 export function checkBoundaryViolations(
   modules: ModuleSpec[],
   specs: SystemSpecs,

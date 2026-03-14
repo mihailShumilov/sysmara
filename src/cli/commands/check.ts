@@ -1,3 +1,10 @@
+/**
+ * @module cli/commands/check
+ * CLI command that validates module boundary constraints: checks that modules
+ * respect allowed/forbidden dependency rules, capabilities stay within their
+ * owning module's scope, and no dependency cycles exist.
+ */
+
 import * as path from 'node:path';
 import * as process from 'node:process';
 import { parseSpecDirectory } from '../../spec/index.js';
@@ -5,6 +12,16 @@ import { validateModuleBoundaries, validateCapabilityBoundaries, detectModuleCyc
 import type { SysmaraConfig, Diagnostic } from '../../types/index.js';
 import { header, success, error, warning, section } from '../format.js';
 
+/**
+ * Validates module boundary constraints for the project.
+ * Checks module dependency rules, capability boundary violations, and
+ * circular dependency cycles. Reports results to stdout in text or JSON format.
+ *
+ * @param cwd - Current working directory (project root).
+ * @param config - Resolved SysMARA project configuration.
+ * @param jsonMode - When `true`, outputs machine-readable JSON instead of human-friendly text.
+ * @throws Exits the process with code 1 if boundary errors or cycles are detected.
+ */
 export async function commandCheckBoundaries(
   cwd: string,
   config: SysmaraConfig,

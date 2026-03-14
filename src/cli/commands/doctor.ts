@@ -1,3 +1,10 @@
+/**
+ * @module cli/commands/doctor
+ * Comprehensive system health check for a SysMARA project. Validates the config
+ * file, spec directory, parsing, cross-validation, module boundaries, invariant
+ * specs, diagnostics, orphan detection, and dependency cycles.
+ */
+
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import * as process from 'node:process';
@@ -24,6 +31,17 @@ async function fileExists(filePath: string): Promise<boolean> {
   }
 }
 
+/**
+ * Runs a comprehensive health check across nine diagnostic sections:
+ * configuration, spec directory, parsing, cross-validation, module boundaries,
+ * invariant specs, full diagnostics, orphan detection, and dependency cycles.
+ * Each section reports pass/warn/fail status.
+ *
+ * @param cwd - Current working directory (project root).
+ * @param config - Resolved SysMARA project configuration.
+ * @param jsonMode - When `true`, outputs a structured JSON report instead of human-friendly text.
+ * @throws Exits the process with code 1 if any section fails.
+ */
 export async function commandDoctor(cwd: string, config: SysmaraConfig, jsonMode: boolean): Promise<void> {
   const sections: DoctorSection[] = [];
   let overallHealthy = true;

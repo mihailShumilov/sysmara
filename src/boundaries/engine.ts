@@ -1,3 +1,12 @@
+/**
+ * @module boundaries/engine
+ *
+ * Boundary validation engine for Sysmara module specifications. Provides
+ * functions to check module dependency rules, detect cross-boundary
+ * capability-entity violations, and find circular dependency cycles
+ * in the module dependency graph.
+ */
+
 import type {
   ModuleSpec,
   CapabilitySpec,
@@ -5,6 +14,25 @@ import type {
   Diagnostic,
 } from '../types/index.js';
 
+/**
+ * Validates module-level boundary rules and returns diagnostics for any violations.
+ *
+ * Checks performed:
+ * - **MOD_CONFLICTING_DEP** (error): A module lists the same dependency in both `allowedDependencies` and `forbiddenDependencies`.
+ * - **MOD_SELF_DEP** (warning): A module lists itself in `allowedDependencies`.
+ * - **MOD_SELF_FORBIDDEN** (warning): A module lists itself in `forbiddenDependencies`.
+ * - **MOD_UNDEFINED_DEP** (error): A module references a dependency that does not exist in the provided modules list.
+ * - **MOD_UNDEFINED_FORBIDDEN_DEP** (warning): A module forbids a dependency that does not exist in the provided modules list.
+ *
+ * @param modules - The array of module specifications to validate.
+ * @returns An array of {@link Diagnostic} objects describing any boundary violations found.
+ *
+ * @example
+ * ```ts
+ * const diagnostics = validateModuleBoundaries(specs.modules);
+ * const errors = diagnostics.filter(d => d.severity === 'error');
+ * ```
+ */
 export function validateModuleBoundaries(modules: ModuleSpec[]): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
   const moduleNames = new Set(modules.map((m) => m.name));
@@ -78,6 +106,28 @@ export function validateModuleBoundaries(modules: ModuleSpec[]): Diagnostic[] {
   return diagnostics;
 }
 
+/**
+ * Validates that capabilities only reference entities within their module boundary
+ * (i.e., the capability's own module or its allowed dependencies).
+ *
+ * Checks performed:
+ * - **CAP_BOUNDARY_UNDEFINED_MODULE** (error): A capability belongs to a module that is not defined.
+ * - **CAP_BOUNDARY_VIOLATION** (error): A capability references an entity from a module that is not in its owning module's allowed dependencies.
+ *
+ * @param capabilities - The array of capability specifications to validate.
+ * @param modules - The array of module specifications defining boundaries and allowed dependencies.
+ * @param entities - The array of entity specifications used to resolve entity-to-module mappings.
+ * @returns An array of {@link Diagnostic} objects describing any boundary violations found.
+ *
+ * @example
+ * ```ts
+ * const diagnostics = validateCapabilityBoundaries(
+ *   specs.capabilities,
+ *   specs.modules,
+ *   specs.entities,
+ * );
+ * ```
+ */
 export function validateCapabilityBoundaries(
   capabilities: CapabilitySpec[],
   modules: ModuleSpec[],
@@ -132,6 +182,25 @@ export function validateCapabilityBoundaries(
   return diagnostics;
 }
 
+/**
+ * Detects circular dependencies in the module dependency graph using depth-first search.
+ *
+ * Builds a directed graph from each module's `allowedDependencies` (excluding self-references
+ * and references to undefined modules) and performs DFS cycle detection. Each detected cycle
+ * is returned as an array of module names forming the cycle path, with the first element
+ * repeated at the end (e.g., `["A", "B", "C", "A"]`).
+ *
+ * @param modules - The array of module specifications whose dependency graph to analyze.
+ * @returns An array of cycles, where each cycle is an array of module name strings.
+ *
+ * @example
+ * ```ts
+ * const cycles = detectModuleCycles(specs.modules);
+ * if (cycles.length > 0) {
+ *   console.error('Circular dependencies found:', cycles);
+ * }
+ * ```
+ */
 export function detectModuleCycles(modules: ModuleSpec[]): string[][] {
   const cycles: string[][] = [];
   const moduleNames = new Set(modules.map((m) => m.name));

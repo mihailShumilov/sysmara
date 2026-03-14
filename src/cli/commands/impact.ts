@@ -1,3 +1,10 @@
+/**
+ * @module cli/commands/impact
+ * CLI command that performs impact analysis on a capability or entity,
+ * showing which other specs (modules, policies, invariants, flows) would
+ * be affected by a change to the specified target.
+ */
+
 import * as path from 'node:path';
 import * as process from 'node:process';
 import { parseSpecDirectory } from '../../spec/index.js';
@@ -10,6 +17,17 @@ type ImpactType = 'capability' | 'entity';
 
 const VALID_TYPES: ImpactType[] = ['capability', 'entity'];
 
+/**
+ * Analyzes the impact of changing a capability or entity by traversing the
+ * system dependency graph and reporting all affected specs.
+ *
+ * @param cwd - Current working directory (project root).
+ * @param type - Target type: `'capability'` or `'entity'`.
+ * @param name - Name of the capability or entity to analyze.
+ * @param config - Resolved SysMARA project configuration.
+ * @param jsonMode - When `true`, outputs a structured JSON impact report.
+ * @throws Exits the process with code 1 if parsing fails or the target is not found in the graph.
+ */
 export async function commandImpact(
   cwd: string,
   type: string,

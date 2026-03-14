@@ -1,3 +1,10 @@
+/**
+ * @module cli/commands/add
+ * CLI command that scaffolds a new spec entry (entity, capability, policy,
+ * invariant, module, or flow) by appending a template to the appropriate
+ * YAML spec file.
+ */
+
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { parse, stringify } from 'yaml';
@@ -81,6 +88,17 @@ function getDefaultTemplate(type: SpecType, name: string): Record<string, unknow
   }
 }
 
+/**
+ * Adds a new spec entry of the given type to the project's spec directory.
+ * Creates the spec YAML file if it does not exist, checks for duplicate names,
+ * and appends a default template that the user can then edit.
+ *
+ * @param cwd - Current working directory (project root).
+ * @param type - Spec type to add: `'entity'`, `'capability'`, `'policy'`, `'invariant'`, `'module'`, or `'flow'`.
+ * @param name - Unique name for the new spec entry.
+ * @param config - Resolved SysMARA project configuration.
+ * @throws Exits the process with code 1 if the type is invalid or a duplicate name exists.
+ */
 export async function commandAdd(cwd: string, type: string, name: string, config: SysmaraConfig): Promise<void> {
   if (!VALID_TYPES.includes(type as SpecType)) {
     console.error(error(`Unknown type "${type}". Valid types: ${VALID_TYPES.join(', ')}`));

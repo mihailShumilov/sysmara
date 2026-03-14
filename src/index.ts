@@ -1,7 +1,15 @@
+/**
+ * @module @sysmara/core
+ * Root barrel export for the SysMARA core library. Re-exports all public APIs
+ * including types, spec parsing, graph generation, capability compilation,
+ * diagnostics, impact analysis, change plans, runtime server components,
+ * safety validation, invariant resolution, and module boundary checking.
+ */
+
 // Core types
 export * from './types/index.js';
 
-// Spec system
+// Spec system — parsing and validation
 export { parseSpecDirectory, crossValidate } from './spec/index.js';
 export {
   entitySpecSchema,
@@ -14,38 +22,38 @@ export {
   glossaryTermSchema,
 } from './spec/index.js';
 
-// Graph
+// Graph — system dependency graph and module map generation
 export { buildSystemGraph, buildSystemMap } from './graph/index.js';
 
-// Compiler
+// Compiler — capability-to-TypeScript code generation
 export { compileCapabilities } from './compiler/index.js';
 export type { CompilerOutput, GeneratedFile } from './compiler/index.js';
 
-// Diagnostics
+// Diagnostics — system-wide health reporting
 export { runDiagnostics, formatDiagnosticsTerminal, formatDiagnosticsJSON } from './diagnostics/index.js';
 
-// Impact
+// Impact — dependency-aware change impact analysis
 export { analyzeImpact } from './impact/index.js';
 export { formatImpactTerminal, formatImpactJSON } from './impact/index.js';
 
-// Change Plan Protocol
+// Change Plan Protocol — structured change planning
 export { generateChangePlan, createEmptyPlan } from './plan/index.js';
 export { renderChangePlanMarkdown, renderChangePlanJSON, renderChangePlanTerminal } from './plan/index.js';
 export { changePlanSchema } from './plan/index.js';
 export type { PlanRequest } from './plan/index.js';
 
-// Runtime
+// Runtime — HTTP server, router, config, errors, and logger
 export { SysmaraServer } from './runtime/index.js';
 export { Router } from './runtime/index.js';
 export { loadConfig, resolveConfig } from './runtime/index.js';
 export { SysmaraError, NotFoundError, ValidationError, ForbiddenError, BadRequestError } from './runtime/index.js';
 export { Logger } from './runtime/index.js';
 
-// Safety
+// Safety — edit zone validation and boundary enforcement
 export { validateEditZones, checkBoundaryViolations } from './safety/index.js';
 
-// Invariants
+// Invariants — spec validation and resolution for entities and capabilities
 export { validateInvariantSpecs, resolveInvariantsForEntity, resolveInvariantsForCapability } from './invariants/index.js';
 
-// Boundaries
+// Boundaries — module dependency rules, capability scope, and cycle detection
 export { validateModuleBoundaries, validateCapabilityBoundaries, detectModuleCycles } from './boundaries/index.js';

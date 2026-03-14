@@ -1,3 +1,10 @@
+/**
+ * @module graph/builder
+ *
+ * Builds a directed system dependency graph from parsed specifications.
+ * The graph represents all spec elements as nodes and their relationships as typed edges.
+ */
+
 import type {
   SystemSpecs,
   RouteSpec,
@@ -6,6 +13,33 @@ import type {
   GraphEdge,
 } from '../types/index.js';
 
+/**
+ * Builds a directed system dependency graph from parsed specifications and optional route definitions.
+ *
+ * Creates nodes for every entity, capability, module, policy, invariant, flow, and route.
+ * Creates typed edges representing relationships such as:
+ * - `belongs_to`: entity -> module
+ * - `uses_entity`: capability -> entity
+ * - `governed_by`: capability -> policy
+ * - `enforces`: invariant -> entity
+ * - `protects`: invariant -> capability
+ * - `depends_on`: module -> module
+ * - `triggers`: capability -> flow
+ * - `exposes`: route -> capability
+ * - `step_of`: capability -> flow
+ *
+ * Nodes and edges are sorted deterministically by ID for stable output.
+ *
+ * @param specs - The parsed and validated system specifications
+ * @param routes - Optional array of HTTP route definitions to include in the graph
+ * @returns A {@link SystemGraph} with version "0.1.0" containing all nodes and edges
+ *
+ * @example
+ * ```ts
+ * const graph = buildSystemGraph(specs, routes);
+ * console.log(`Graph has ${graph.nodes.length} nodes and ${graph.edges.length} edges`);
+ * ```
+ */
 export function buildSystemGraph(specs: SystemSpecs, routes?: RouteSpec[]): SystemGraph {
   const nodes: GraphNode[] = [];
   const edges: GraphEdge[] = [];

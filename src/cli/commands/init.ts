@@ -1,3 +1,9 @@
+/**
+ * @module cli/commands/init
+ * CLI command that scaffolds a new SysMARA project by creating the standard
+ * directory layout, starter spec YAML files, and a default `sysmara.config.yaml`.
+ */
+
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { success } from '../format.js';
@@ -11,6 +17,14 @@ async function writeFile(filePath: string, content: string): Promise<void> {
   await fs.writeFile(filePath, content, 'utf-8');
 }
 
+/**
+ * Initializes a new SysMARA project in the given directory.
+ * Creates the standard directory structure (`app/`, `system/`, `.framework/`),
+ * writes starter spec files (entities, capabilities, policies, invariants,
+ * modules, flows, safe-edit-zones, glossary), and generates `sysmara.config.yaml`.
+ *
+ * @param cwd - Directory in which to create the project structure.
+ */
 export async function commandInit(cwd: string): Promise<void> {
   console.log('Initializing SysMARA project...\n');
 

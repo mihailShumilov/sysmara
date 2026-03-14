@@ -1,3 +1,10 @@
+/**
+ * @module cli/commands/plan
+ * CLI commands for creating and displaying SysMARA change plans.
+ * A change plan is a structured YAML document that describes a set of
+ * proposed capability, entity, or module changes before they are implemented.
+ */
+
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import * as process from 'node:process';
@@ -10,6 +17,16 @@ async function ensureDir(dirPath: string): Promise<void> {
   await fs.mkdir(dirPath, { recursive: true });
 }
 
+/**
+ * Creates a new change plan skeleton and writes it as a YAML file to
+ * `<frameworkDir>/plans/<planId>.yaml`. The generated file contains
+ * placeholder fields for the user to fill in.
+ *
+ * @param cwd - Current working directory (project root).
+ * @param title - Title for the new change plan.
+ * @param config - Resolved SysMARA project configuration.
+ * @param jsonMode - When `true`, outputs a structured JSON summary including the plan ID and file path.
+ */
 export async function commandPlanCreate(
   cwd: string,
   title: string,
@@ -51,6 +68,16 @@ export async function commandPlanCreate(
   }
 }
 
+/**
+ * Reads and displays an existing change plan from a YAML file.
+ * Renders the plan in either human-readable terminal format or JSON.
+ *
+ * @param cwd - Current working directory (project root).
+ * @param filePath - Path to the change plan YAML file (relative or absolute).
+ * @param _config - Resolved SysMARA project configuration (currently unused).
+ * @param jsonMode - When `true`, outputs the plan as JSON.
+ * @throws Exits the process with code 1 if the file cannot be read or parsed, or is missing required fields.
+ */
 export async function commandPlanShow(
   cwd: string,
   filePath: string,

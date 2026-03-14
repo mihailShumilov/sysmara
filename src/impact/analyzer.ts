@@ -1,3 +1,11 @@
+/**
+ * @module impact/analyzer
+ *
+ * Performs impact analysis on a system dependency graph. Given a target node,
+ * determines which other nodes in the graph are affected by changes to that target
+ * using bidirectional BFS traversal up to a maximum depth of 3.
+ */
+
 import type {
   SystemGraph,
   SystemSpecs,
@@ -6,6 +14,28 @@ import type {
   GraphEdge,
 } from '../types/index.js';
 
+/**
+ * Analyzes the impact of a change to a specific target node within a system dependency graph.
+ *
+ * Performs a bidirectional breadth-first search (BFS) from the target node, traversing
+ * both incoming and outgoing edges up to a maximum depth of 3. Categorizes all affected
+ * nodes by type (module, invariant, policy, capability, route, flow) and generates
+ * lists of affected tests and generated artifacts.
+ *
+ * @param graph - The system dependency graph containing nodes and edges to traverse.
+ * @param target - The identifier of the target node to analyze impact for.
+ * @param _specs - Optional system specifications (reserved for future use).
+ * @returns An {@link ImpactSurface} describing all affected nodes, tests, and artifacts,
+ *   or `null` if the target node is not found in the graph.
+ *
+ * @example
+ * ```ts
+ * const impact = analyzeImpact(systemGraph, 'capability:createOrder');
+ * if (impact) {
+ *   console.log(`Affected modules: ${impact.affectedModules.join(', ')}`);
+ * }
+ * ```
+ */
 export function analyzeImpact(
   graph: SystemGraph,
   target: string,

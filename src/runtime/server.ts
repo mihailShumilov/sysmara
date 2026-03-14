@@ -1,3 +1,10 @@
+/**
+ * @module runtime/server
+ * HTTP server for the SysMARA runtime. Provides a capability-aware request
+ * pipeline that extracts actors, routes requests, parses JSON bodies, and
+ * returns structured error responses.
+ */
+
 import * as http from 'node:http';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { ActorContext, HandlerContext, RouteSpec } from '../types/index.js';
@@ -7,6 +14,14 @@ import { SysmaraError } from './errors.js';
 import { Logger } from './logger.js';
 import type { LogLevel } from './logger.js';
 
+/**
+ * Configuration options for creating a {@link SysmaraServer}.
+ *
+ * @property port - TCP port to listen on. Defaults to `3000`.
+ * @property host - Network interface to bind to. Defaults to `'0.0.0.0'`.
+ * @property logLevel - Minimum log severity level. Defaults to `'info'`.
+ * @property actorExtractor - Async function that extracts an {@link ActorContext} from each incoming request. Defaults to returning an anonymous actor.
+ */
 export interface ServerOptions {
   port?: number;
   host?: string;
@@ -66,6 +81,23 @@ function sendJson(res: ServerResponse, statusCode: number, data: unknown): void 
   res.end(body);
 }
 
+/**
+ * The SysMARA HTTP server. Wraps Node.js `http.Server` with capability-based
+ * routing, actor extraction, JSON body parsing, and structured error handling.
+ *
+ * Built-in routes:
+ * - `GET /health` — Returns server health status and uptime.
+ * - `GET /_sysmara/routes` — Lists all registered routes.
+ *
+ * @example
+ * ```ts
+ * const server = new SysmaraServer({ port: 8080 });
+ * server.get('/users/:id', 'user:read', async (ctx) => {
+ *   return { id: ctx.params.id };
+ * });
+ * await server.start();
+ * ```
+ */
 export class SysmaraServer {
   private server: http.Server | null = null;
   private readonly router: Router;
@@ -74,6 +106,11 @@ export class SysmaraServer {
   private readonly logger: Logger;
   private readonly startTime: number;
 
+  /**
+   * Creates a new SysmaraServer instance with the given options.
+   *
+   * @param options - Server configuration. All fields are optional and have sensible defaults.
+   */
   constructor(options?: ServerOptions) {
     this.options = {
       port: options?.port ?? 3000,
@@ -88,36 +125,99 @@ export class SysmaraServer {
     this.registerBuiltinRoutes();
   }
 
+  /**
+   * Registers a route for the given HTTP method and path pattern.
+   *
+   * @param method - HTTP method (e.g. `'GET'`, `'POST'`).
+   * @param path - URL path pattern, supporting `:param` segments.
+   * @param capability - SysMARA capability identifier associated with this route.
+   * @param handler - Async handler invoked when the route matches.
+   * @returns `this` for method chaining.
+   */
   route(method: string, path: string, capability: string, handler: Handler): this {
     this.router.add(method, path, capability, handler);
     return this;
   }
 
+  /**
+   * Registers a GET route. Shorthand for `route('GET', ...)`.
+   *
+   * @param path - URL path pattern.
+   * @param capability - SysMARA capability identifier.
+   * @param handler - Async request handler.
+   * @returns `this` for method chaining.
+   */
   get(path: string, capability: string, handler: Handler): this {
     return this.route('GET', path, capability, handler);
   }
 
+  /**
+   * Registers a POST route. Shorthand for `route('POST', ...)`.
+   *
+   * @param path - URL path pattern.
+   * @param capability - SysMARA capability identifier.
+   * @param handler - Async request handler.
+   * @returns `this` for method chaining.
+   */
   post(path: string, capability: string, handler: Handler): this {
     return this.route('POST', path, capability, handler);
   }
 
+  /**
+   * Registers a PUT route. Shorthand for `route('PUT', ...)`.
+   *
+   * @param path - URL path pattern.
+   * @param capability - SysMARA capability identifier.
+   * @param handler - Async request handler.
+   * @returns `this` for method chaining.
+   */
   put(path: string, capability: string, handler: Handler): this {
     return this.route('PUT', path, capability, handler);
   }
 
+  /**
+   * Registers a PATCH route. Shorthand for `route('PATCH', ...)`.
+   *
+   * @param path - URL path pattern.
+   * @param capability - SysMARA capability identifier.
+   * @param handler - Async request handler.
+   * @returns `this` for method chaining.
+   */
   patch(path: string, capability: string, handler: Handler): this {
     return this.route('PATCH', path, capability, handler);
   }
 
+  /**
+   * Registers a DELETE route. Shorthand for `route('DELETE', ...)`.
+   *
+   * @param path - URL path pattern.
+   * @param capability - SysMARA capability identifier.
+   * @param handler - Async request handler.
+   * @returns `this` for method chaining.
+   */
   delete(path: string, capability: string, handler: Handler): this {
     return this.route('DELETE', path, capability, handler);
   }
 
+  /**
+   * Registers an async callback to be invoked during graceful server shutdown.
+   * Shutdown handlers run in registration order. Errors in individual handlers
+   * are logged but do not prevent subsequent handlers from executing.
+   *
+   * @param handler - Async cleanup function (e.g. close database connections).
+   * @returns `this` for method chaining.
+   */
   onShutdown(handler: () => Promise<void>): this {
     this.shutdownHandlers.push(handler);
     return this;
   }
 
+  /**
+   * Starts the HTTP server and begins accepting connections.
+   * Registers SIGINT and SIGTERM handlers for graceful shutdown.
+   *
+   * @returns A promise that resolves once the server is listening.
+   */
   async start(): Promise<void> {
     return new Promise<void>((resolve) => {
       this.server = http.createServer((req, res) => {
@@ -141,6 +241,12 @@ export class SysmaraServer {
     });
   }
 
+  /**
+   * Gracefully stops the server. Runs all registered shutdown handlers,
+   * then closes the underlying HTTP server.
+   *
+   * @returns A promise that resolves once the server is fully stopped.
+   */
   async stop(): Promise<void> {
     this.logger.info('Shutting down SysMARA server...');
 
@@ -169,6 +275,12 @@ export class SysmaraServer {
     this.logger.info('SysMARA server stopped');
   }
 
+  /**
+   * Returns route specifications for all registered routes, suitable for
+   * introspection or API documentation generation.
+   *
+   * @returns An array of {@link RouteSpec} objects (method, path, capability).
+   */
   getRouteSpecs(): RouteSpec[] {
     return this.router.getRoutes().map((route) => ({
       method: route.method as RouteSpec['method'],

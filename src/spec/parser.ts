@@ -1,3 +1,12 @@
+/**
+ * @module spec/parser
+ *
+ * Parses Sysmara specification files from YAML into validated TypeScript objects.
+ * Supports loading specs from individual YAML files, directories of YAML files,
+ * or single files containing arrays. Produces diagnostics for any parse or
+ * validation errors encountered.
+ */
+
 import { readdir, readFile, stat } from 'node:fs/promises';
 import { join, extname, basename } from 'node:path';
 import { parse as parseYaml } from 'yaml';
@@ -23,7 +32,23 @@ import {
 } from './schemas.js';
 
 /**
- * Parse a single YAML file and validate against a Zod schema.
+ * Reads a single YAML file from disk, parses it, and validates the result
+ * against the provided Zod schema.
+ *
+ * @typeParam T - The expected parsed data type
+ * @param filePath - Absolute path to the YAML file to parse
+ * @param schema - Zod schema to validate the parsed data against
+ * @returns An object containing the validated data (or null on failure) and any diagnostics
+ *
+ * @example
+ * ```ts
+ * const result = await parseSpecFile('/path/to/entities.yaml', entitiesFileSchema);
+ * if (result.data) {
+ *   console.log('Parsed entities:', result.data);
+ * } else {
+ *   console.error('Errors:', result.diagnostics);
+ * }
+ * ```
  */
 export async function parseSpecFile<T>(
   filePath: string,
@@ -258,8 +283,22 @@ async function loadSpecItems<T>(
 }
 
 /**
- * Parse an entire spec directory and return fully validated SystemSpecs
- * or diagnostics describing any problems found.
+ * Parses an entire spec directory, loading all spec types (entities, capabilities,
+ * policies, invariants, modules, flows, safe-edit-zones, glossary) from YAML files.
+ *
+ * Each spec type can be provided as a single YAML file (e.g., `entities.yaml`)
+ * or as a directory of individual YAML files (e.g., `entities/user.yaml`).
+ *
+ * @param specDir - Absolute path to the root spec directory
+ * @returns An object containing the assembled {@link SystemSpecs} (or null if errors occurred) and all diagnostics
+ *
+ * @example
+ * ```ts
+ * const { specs, diagnostics } = await parseSpecDirectory('/project/specs');
+ * if (specs) {
+ *   console.log(`Loaded ${specs.entities.length} entities`);
+ * }
+ * ```
  */
 export async function parseSpecDirectory(
   specDir: string,
