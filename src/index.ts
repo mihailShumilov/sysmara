@@ -75,3 +75,22 @@ export type {
   MigrationStep,
   DatabaseStatus,
 } from './database/index.js';
+
+// SysMARA ORM — AI-first database layer
+export {
+  SysmaraORM,
+  SysmaraRepository,
+  CapabilityQueryBuilder,
+  OperationLog,
+  MigrationEngine,
+  generateSysmaraSchema,
+  sysmaraOrmAdapter,
+  createSysmaraOrmAdapter,
+} from './database/index.js';
+export type {
+  OperationLogEntry,
+  BuiltQuery,
+  QueryOperation,
+  SysmaraMigrationStep,
+  MigrationPlan,
+} from './database/index.js';

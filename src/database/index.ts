@@ -29,4 +29,20 @@ export type {
   DatabaseStatus,
 } from './types.js';
 
-export { prismaAdapter, drizzleAdapter, typeormAdapter } from './adapters/index.js';
+export { prismaAdapter, drizzleAdapter, typeormAdapter, sysmaraOrmAdapter } from './adapters/index.js';
+export {
+  SysmaraORM,
+  SysmaraRepository,
+  CapabilityQueryBuilder,
+  OperationLog,
+  MigrationEngine,
+  generateSysmaraSchema,
+  createSysmaraOrmAdapter,
+} from './adapters/index.js';
+export type {
+  OperationLogEntry,
+  BuiltQuery,
+  QueryOperation,
+  SysmaraMigrationStep,
+  MigrationPlan,
+} from './adapters/index.js';
