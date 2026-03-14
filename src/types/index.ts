@@ -533,6 +533,7 @@ export interface ActorContext {
  * @property port - The HTTP server port number
  * @property host - The HTTP server host address
  * @property logLevel - Minimum log level to output
+ * @property database - Optional database adapter configuration
  */
 export interface SysmaraConfig {
   name: string;
@@ -544,6 +545,22 @@ export interface SysmaraConfig {
   port: number;
   host: string;
   logLevel: 'debug' | 'info' | 'warn' | 'error';
+  database?: DatabaseConfig;
+}
+
+/**
+ * Database configuration section within `sysmara.config.yaml`.
+ *
+ * @property adapter - The ORM or query-builder adapter to use
+ * @property provider - The target database provider
+ * @property outputDir - Optional output directory for generated database files
+ * @property connectionString - Optional database connection string
+ */
+export interface DatabaseConfig {
+  adapter: string;
+  provider: string;
+  outputDir?: string;
+  connectionString?: string;
 }
 
 /**

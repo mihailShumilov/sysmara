@@ -57,3 +57,21 @@ export { validateInvariantSpecs, resolveInvariantsForEntity, resolveInvariantsFo
 
 // Boundaries — module dependency rules, capability scope, and cycle detection
 export { validateModuleBoundaries, validateCapabilityBoundaries, detectModuleCycles } from './boundaries/index.js';
+
+// Database — adapter interface, registry, and shared types
+export { registerAdapter, getAdapter, listAdapters } from './database/index.js';
+export type {
+  DatabaseProvider,
+  AdapterName,
+  DatabaseAdapterConfig,
+  DatabaseAdapter,
+  ColumnType,
+  ConstraintType,
+  ConstraintDefinition,
+  ColumnDefinition,
+  TableDefinition,
+  IndexDefinition,
+  MigrationAction,
+  MigrationStep,
+  DatabaseStatus,
+} from './database/index.js';

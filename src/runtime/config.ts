@@ -33,47 +33,77 @@ export function loadConfig(overrides?: Partial<SysmaraConfig>): SysmaraConfig {
 
 /**
  * Parse a minimal subset of YAML key-value pairs.
- * Handles simple `key: value` lines (strings, numbers, booleans).
- * Does not handle nested objects, arrays, or multi-line values.
+ * Handles simple `key: value` lines (strings, numbers, booleans)
+ * and one level of nesting via indentation.
  */
 function parseSimpleYaml(content: string): Record<string, unknown> {
   const result: Record<string, unknown> = {};
+  let currentSection: string | null = null;
+  let sectionData: Record<string, unknown> = {};
 
   for (const rawLine of content.split('\n')) {
-    const line = rawLine.trim();
-    if (line === '' || line.startsWith('#')) {
+    const stripped = rawLine.trimEnd();
+    if (stripped.trim() === '' || stripped.trim().startsWith('#')) {
       continue;
     }
 
-    const colonIndex = line.indexOf(':');
+    const colonIndex = stripped.indexOf(':');
     if (colonIndex === -1) {
       continue;
     }
 
-    const key = line.slice(0, colonIndex).trim();
-    let value: string | number | boolean = line.slice(colonIndex + 1).trim();
+    const indent = stripped.length - stripped.trimStart().length;
+    const key = stripped.slice(0, colonIndex).trim();
+    let value: string | number | boolean = stripped.slice(colonIndex + 1).trim();
 
-    // Remove surrounding quotes
-    if (
-      (value.startsWith('"') && value.endsWith('"')) ||
-      (value.startsWith("'") && value.endsWith("'"))
-    ) {
-      value = value.slice(1, -1);
-    } else if (value === 'true') {
-      result[key] = true;
-      continue;
-    } else if (value === 'false') {
-      result[key] = false;
-      continue;
-    } else if (value !== '' && !Number.isNaN(Number(value))) {
-      result[key] = Number(value);
+    // Nested key (indented under a section header)
+    if (indent > 0 && currentSection) {
+      sectionData[key] = parseYamlValue(value);
       continue;
     }
 
-    result[key] = value;
+    // Flush previous section if any
+    if (currentSection) {
+      result[currentSection] = sectionData;
+      currentSection = null;
+      sectionData = {};
+    }
+
+    // Section header (key with no value)
+    if (value === '') {
+      currentSection = key;
+      sectionData = {};
+      continue;
+    }
+
+    result[key] = parseYamlValue(value);
+  }
+
+  // Flush final section
+  if (currentSection) {
+    result[currentSection] = sectionData;
   }
 
   return result;
+}
+
+/**
+ * Parses a single YAML scalar value string into the appropriate JS type.
+ *
+ * @param value - The raw string value from the YAML line
+ * @returns The parsed value as a string, number, or boolean
+ */
+function parseYamlValue(value: string): string | number | boolean {
+  if (
+    (value.startsWith('"') && value.endsWith('"')) ||
+    (value.startsWith("'") && value.endsWith("'"))
+  ) {
+    return value.slice(1, -1);
+  }
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  if (value !== '' && !Number.isNaN(Number(value))) return Number(value);
+  return value;
 }
 
 /**
@@ -96,7 +126,7 @@ export function resolveConfig(configPath?: string): SysmaraConfig {
     // Only pick known config keys
     const knownKeys: Array<keyof SysmaraConfig> = [
       'name', 'version', 'specDir', 'appDir', 'frameworkDir',
-      'generatedDir', 'port', 'host', 'logLevel',
+      'generatedDir', 'port', 'host', 'logLevel', 'database',
     ];
 
     for (const key of knownKeys) {

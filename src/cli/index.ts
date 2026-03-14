@@ -20,6 +20,7 @@ import { commandExplain } from './commands/explain.js';
 import { commandImpact } from './commands/impact.js';
 import { commandPlanCreate, commandPlanShow } from './commands/plan.js';
 import { commandCheckBoundaries } from './commands/check.js';
+import { commandDbGenerate, commandDbMigrate, commandDbStatus } from './commands/db.js';
 
 /** Current CLI version string, displayed by `--version`. */
 const VERSION = '0.2.0';
@@ -47,6 +48,9 @@ Commands:
   impact <type> <name>         Analyze impact of a capability or entity
   plan create <title>          Create a change plan skeleton
   plan show <file>             Display a change plan
+  db generate                  Generate database schema from specs
+  db migrate                   Create database migration
+  db status                    Show database adapter status
   help                         Show this help
 
 Options:
@@ -211,6 +215,23 @@ async function main(): Promise<void> {
         } else {
           console.error(`Unknown plan subcommand: ${subcommand}`);
           console.error('Usage: sysmara plan <create|show> [args]');
+          process.exit(1);
+        }
+        break;
+      }
+
+      case 'db': {
+        const subcommand = positional[1];
+        const config = resolveConfig(path.join(cwd, 'sysmara.config.yaml'));
+
+        if (subcommand === 'generate') {
+          await commandDbGenerate(cwd, config, jsonMode);
+        } else if (subcommand === 'migrate') {
+          await commandDbMigrate(cwd, config, jsonMode);
+        } else if (subcommand === 'status') {
+          await commandDbStatus(cwd, config, jsonMode);
+        } else {
+          console.error('Usage: sysmara db <generate|migrate|status>');
           process.exit(1);
         }
         break;
