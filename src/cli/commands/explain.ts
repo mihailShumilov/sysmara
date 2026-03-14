@@ -11,10 +11,20 @@ import { parseSpecDirectory } from '../../spec/index.js';
 import type { SysmaraConfig, SystemSpecs, CapabilitySpec, InvariantSpec, ModuleSpec } from '../../types/index.js';
 import { header, error, section } from '../format.js';
 
+/** The spec types that the `explain` command can describe. */
 type ExplainType = 'capability' | 'invariant' | 'module';
 
 const VALID_TYPES: ExplainType[] = ['capability', 'invariant', 'module'];
 
+/**
+ * Builds a human-readable explanation of a capability, including its description,
+ * module, entities, input/output fields, associated policies, invariants, and
+ * the owning module details.
+ *
+ * @param cap - The capability spec to explain.
+ * @param specs - The full set of parsed system specs, used to resolve related references.
+ * @returns A multi-line formatted string suitable for terminal output.
+ */
 function explainCapability(cap: CapabilitySpec, specs: SystemSpecs): string {
   const lines: string[] = [];
 
@@ -93,6 +103,14 @@ function explainCapability(cap: CapabilitySpec, specs: SystemSpecs): string {
   return lines.join('\n');
 }
 
+/**
+ * Produces a JSON-serializable representation of a capability explanation,
+ * enriching policy and invariant references with their descriptions from the specs.
+ *
+ * @param cap - The capability spec to explain.
+ * @param specs - The full set of parsed system specs, used to resolve related references.
+ * @returns A plain object containing the capability details and resolved cross-references.
+ */
 function explainCapabilityJSON(cap: CapabilitySpec, specs: SystemSpecs): Record<string, unknown> {
   const ownerModule = specs.modules.find((m) => m.name === cap.module);
   return {
@@ -116,6 +134,14 @@ function explainCapabilityJSON(cap: CapabilitySpec, specs: SystemSpecs): Record<
   };
 }
 
+/**
+ * Builds a human-readable explanation of an invariant, including its description,
+ * entity, rule, severity, enforcement mode, and the capabilities that reference it.
+ *
+ * @param inv - The invariant spec to explain.
+ * @param specs - The full set of parsed system specs, used to find referencing capabilities.
+ * @returns A multi-line formatted string suitable for terminal output.
+ */
 function explainInvariant(inv: InvariantSpec, specs: SystemSpecs): string {
   const lines: string[] = [];
 
@@ -141,6 +167,14 @@ function explainInvariant(inv: InvariantSpec, specs: SystemSpecs): string {
   return lines.join('\n');
 }
 
+/**
+ * Produces a JSON-serializable representation of an invariant explanation,
+ * including the list of capabilities that reference it.
+ *
+ * @param inv - The invariant spec to explain.
+ * @param specs - The full set of parsed system specs, used to find referencing capabilities.
+ * @returns A plain object containing the invariant details and referencing capability names.
+ */
 function explainInvariantJSON(inv: InvariantSpec, specs: SystemSpecs): Record<string, unknown> {
   const referencingCaps = specs.capabilities.filter((c) => c.invariants.includes(inv.name));
   return {
@@ -154,6 +188,15 @@ function explainInvariantJSON(inv: InvariantSpec, specs: SystemSpecs): Record<st
   };
 }
 
+/**
+ * Builds a human-readable explanation of a module, including its description,
+ * owner, contained entities and capabilities (with descriptions), and its
+ * allowed/forbidden dependency lists.
+ *
+ * @param mod - The module spec to explain.
+ * @param specs - The full set of parsed system specs, used to resolve entity and capability descriptions.
+ * @returns A multi-line formatted string suitable for terminal output.
+ */
 function explainModule(mod: ModuleSpec, specs: SystemSpecs): string {
   const lines: string[] = [];
 
@@ -203,6 +246,14 @@ function explainModule(mod: ModuleSpec, specs: SystemSpecs): string {
   return lines.join('\n');
 }
 
+/**
+ * Produces a JSON-serializable representation of a module explanation,
+ * enriching entity and capability names with their descriptions from the specs.
+ *
+ * @param mod - The module spec to explain.
+ * @param specs - The full set of parsed system specs, used to resolve entity and capability descriptions.
+ * @returns A plain object containing the module details and resolved references.
+ */
 function explainModuleJSON(mod: ModuleSpec, specs: SystemSpecs): Record<string, unknown> {
   return {
     name: mod.name,

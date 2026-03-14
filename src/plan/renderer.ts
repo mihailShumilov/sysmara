@@ -8,6 +8,14 @@
 
 import type { ChangePlan } from '../types/index.js';
 
+/**
+ * Converts a risk level string into a bracketed uppercase badge label.
+ * Known levels (`'low'`, `'medium'`, `'high'`, `'critical'`) map to their
+ * predefined badges; unknown values are uppercased and wrapped in brackets.
+ *
+ * @param risk - The risk level string to convert.
+ * @returns A badge string such as `'[LOW]'`, `'[HIGH]'`, or `'[CUSTOM]'`.
+ */
 function riskBadge(risk: string): string {
   const badges: Record<string, string> = {
     low: '[LOW]',
@@ -18,6 +26,15 @@ function riskBadge(risk: string): string {
   return badges[risk] ?? `[${risk.toUpperCase()}]`;
 }
 
+/**
+ * Formats an array of strings as a newline-separated Markdown bullet list.
+ * Each item is prefixed with `"- "` and optionally indented by a number of
+ * two-space levels.
+ *
+ * @param items - The strings to render as bullet points.
+ * @param indent - Number of two-space indentation levels to apply (default `0`).
+ * @returns A single string with each item on its own line, prefixed with `"- "`.
+ */
 function bulletList(items: string[], indent: number = 0): string {
   const pad = '  '.repeat(indent);
   return items.map((item) => `${pad}- ${item}`).join('\n');

@@ -19,6 +19,18 @@ import type {
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
+/**
+ * Creates a {@link Diagnostic} object with the given properties, omitting
+ * optional fields (`path`, `suggestion`) when they are not provided.
+ *
+ * @param code - The diagnostic code (e.g., `'AX101'`).
+ * @param severity - The severity level of the diagnostic.
+ * @param message - A human-readable description of the issue.
+ * @param source - The specification section that produced this diagnostic (e.g., `'entities'`).
+ * @param path - An optional dot-delimited path pinpointing the offending declaration.
+ * @param suggestion - An optional recommended action to resolve the issue.
+ * @returns A fully constructed {@link Diagnostic} object.
+ */
 function diag(
   code: string,
   severity: DiagnosticSeverity,
@@ -33,12 +45,29 @@ function diag(
   return d;
 }
 
+/**
+ * Extracts the `name` property from each item and returns them as a `Set`
+ * for O(1) membership lookups.
+ *
+ * @param items - An array of objects that each have a `name` property.
+ * @returns A `Set` containing all unique names from the input array.
+ */
 function nameSet(items: { name: string }[]): Set<string> {
   return new Set(items.map((i) => i.name));
 }
 
 // ── AX1xx: Duplicate Names ──────────────────────────────────────────
 
+/**
+ * Checks for duplicate names within each specification category (AX1xx).
+ *
+ * Iterates over entities, capabilities, policies, invariants, modules, and flows,
+ * emitting an error diagnostic for every name that appears more than once within
+ * the same category.
+ *
+ * @param specs - The system specifications to validate.
+ * @returns An array of diagnostics for any duplicate names found (codes AX101--AX106).
+ */
 function checkDuplicates(specs: SystemSpecs): Diagnostic[] {
   const results: Diagnostic[] = [];
 
@@ -80,6 +109,24 @@ function checkDuplicates(specs: SystemSpecs): Diagnostic[] {
 
 // ── AX2xx: Reference Resolution ─────────────────────────────────────
 
+/**
+ * Validates that all cross-references between specification items resolve to
+ * defined targets (AX2xx).
+ *
+ * Covers the following reference paths:
+ * - AX201: Capability -> Entity
+ * - AX202: Capability -> Policy
+ * - AX203: Capability -> Invariant
+ * - AX204: Policy -> Capability
+ * - AX205: Invariant -> Entity
+ * - AX206: Flow trigger -> Capability
+ * - AX207: Flow step action -> Capability
+ * - AX208: Module -> Entity
+ * - AX209: Module -> Capability
+ *
+ * @param specs - The system specifications to validate.
+ * @returns An array of error diagnostics for every unresolved reference found.
+ */
 function checkReferences(specs: SystemSpecs): Diagnostic[] {
   const results: Diagnostic[] = [];
   const entityNames = nameSet(specs.entities);
@@ -250,6 +297,20 @@ function checkReferences(specs: SystemSpecs): Diagnostic[] {
 
 // ── AX3xx: Boundary Violations ──────────────────────────────────────
 
+/**
+ * Detects module boundary violations (AX3xx).
+ *
+ * Performs the following checks:
+ * - AX301: A module lists the same dependency in both `allowedDependencies`
+ *   and `forbiddenDependencies`.
+ * - AX302: Circular dependencies exist in the module dependency graph.
+ * - AX303: A module references an undefined module in its dependency lists.
+ * - AX304: A capability uses an entity that belongs to a module outside
+ *   the capability's own module boundary and not reachable via allowed dependencies.
+ *
+ * @param specs - The system specifications to validate.
+ * @returns An array of error diagnostics for every boundary violation found.
+ */
 function checkBoundaries(specs: SystemSpecs): Diagnostic[] {
   const results: Diagnostic[] = [];
   const moduleNames = nameSet(specs.modules);
@@ -382,6 +443,19 @@ function checkBoundaries(specs: SystemSpecs): Diagnostic[] {
   return results;
 }
 
+/**
+ * Detects circular dependencies in the module dependency graph using
+ * iterative depth-first search with an explicit recursion stack.
+ *
+ * Builds a directed graph from each module's `allowedDependencies` and
+ * traverses it, recording any back-edges that form cycles.
+ *
+ * @param modules - The list of module specifications whose dependency
+ *   graphs should be checked.
+ * @returns An array of cycles, where each cycle is represented as an
+ *   ordered array of module names ending with a repetition of the first
+ *   name (e.g., `['A', 'B', 'A']`).
+ */
 function detectCycles(modules: ModuleSpec[]): string[][] {
   const graph = new Map<string, string[]>();
   for (const mod of modules) {
@@ -427,6 +501,19 @@ function detectCycles(modules: ModuleSpec[]): string[][] {
 
 // ── AX4xx: Orphan Detection ─────────────────────────────────────────
 
+/**
+ * Detects orphaned specification items that are defined but not meaningfully
+ * connected to the rest of the system (AX4xx).
+ *
+ * Checks for:
+ * - AX401: Entities not assigned to any module.
+ * - AX402: Capabilities not assigned to any module.
+ * - AX403: Policies that do not govern any valid (defined) capability.
+ * - AX404: Invariants that reference a non-existent entity.
+ *
+ * @param specs - The system specifications to validate.
+ * @returns An array of warning diagnostics for every orphaned item found.
+ */
 function checkOrphans(specs: SystemSpecs): Diagnostic[] {
   const results: Diagnostic[] = [];
   const entityNames = nameSet(specs.entities);
@@ -510,6 +597,21 @@ function checkOrphans(specs: SystemSpecs): Diagnostic[] {
 
 // ── AX5xx: Safety ───────────────────────────────────────────────────
 
+/**
+ * Validates consistency between safe-edit-zone declarations and the generated
+ * manifest (AX5xx). If no manifest is provided, safety checks are skipped.
+ *
+ * Checks for:
+ * - AX501: A file declared as `generated` in safe-edit-zones is missing from
+ *   the manifest.
+ * - AX502: The zone type declared in safe-edit-zones does not match the zone
+ *   type recorded in the manifest for the same path.
+ *
+ * @param specs - The system specifications containing `safeEditZones`.
+ * @param manifest - The optional generated manifest to validate against.
+ * @returns An array of warning diagnostics for any safety mismatches found,
+ *   or an empty array if the manifest is not provided.
+ */
 function checkSafety(
   specs: SystemSpecs,
   manifest?: GeneratedManifest,
@@ -561,6 +663,19 @@ function checkSafety(
 
 // ── AX6xx: Consistency ──────────────────────────────────────────────
 
+/**
+ * Checks for internal consistency issues within module dependency declarations
+ * (AX6xx).
+ *
+ * Checks for:
+ * - AX601: A module lists the same dependency in both `allowedDependencies`
+ *   and `forbiddenDependencies`.
+ * - AX602: A module lists itself in its own `allowedDependencies` or
+ *   `forbiddenDependencies` (self-reference).
+ *
+ * @param specs - The system specifications to validate.
+ * @returns An array of error diagnostics for every consistency violation found.
+ */
 function checkConsistency(specs: SystemSpecs): Diagnostic[] {
   const results: Diagnostic[] = [];
 

@@ -13,6 +13,7 @@ import { analyzeImpact, formatImpactTerminal, formatImpactJSON } from '../../imp
 import type { SysmaraConfig } from '../../types/index.js';
 import { header, error } from '../format.js';
 
+/** The spec types that can be analyzed for impact. */
 type ImpactType = 'capability' | 'entity';
 
 const VALID_TYPES: ImpactType[] = ['capability', 'entity'];

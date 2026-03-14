@@ -8,10 +8,21 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { success } from '../format.js';
 
+/**
+ * Creates a directory (and any missing parent directories) if it does not already exist.
+ *
+ * @param dirPath - Absolute path of the directory to create.
+ */
 async function ensureDir(dirPath: string): Promise<void> {
   await fs.mkdir(dirPath, { recursive: true });
 }
 
+/**
+ * Writes a UTF-8 text file, creating any missing parent directories first.
+ *
+ * @param filePath - Absolute path of the file to write.
+ * @param content - String content to write to the file.
+ */
 async function writeFile(filePath: string, content: string): Promise<void> {
   await ensureDir(path.dirname(filePath));
   await fs.writeFile(filePath, content, 'utf-8');

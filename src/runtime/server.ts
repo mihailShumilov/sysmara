@@ -29,6 +29,7 @@ export interface ServerOptions {
   actorExtractor?: (req: IncomingMessage) => Promise<ActorContext>;
 }
 
+/** Internal type that makes all {@link ServerOptions} properties required, used after defaults are applied. */
 type RequiredServerOptions = Required<ServerOptions>;
 
 const DEFAULT_ACTOR: ActorContext = {
@@ -37,10 +38,25 @@ const DEFAULT_ACTOR: ActorContext = {
   attributes: {},
 };
 
+/**
+ * Default actor extractor that returns a shallow copy of the anonymous actor
+ * context (id `'anonymous'`, no roles, no attributes) for every request.
+ *
+ * @param _req - The incoming HTTP request (unused).
+ * @returns A promise resolving to a default anonymous {@link ActorContext}.
+ */
 function defaultActorExtractor(_req: IncomingMessage): Promise<ActorContext> {
   return Promise.resolve({ ...DEFAULT_ACTOR });
 }
 
+/**
+ * Parses a URL query string into a key-value record. Keys and values are
+ * URI-decoded. Pairs without an `=` sign are treated as keys with an empty
+ * string value. An empty input string returns an empty record.
+ *
+ * @param qs - The raw query string (without the leading `?`).
+ * @returns A record mapping each decoded key to its decoded value.
+ */
 function parseQueryString(qs: string): Record<string, string> {
   const result: Record<string, string> = {};
   if (qs === '') {
@@ -59,6 +75,14 @@ function parseQueryString(qs: string): Record<string, string> {
   return result;
 }
 
+/**
+ * Reads the full request body from an incoming HTTP message and returns it
+ * as a UTF-8 string. Collects data chunks and concatenates them once the
+ * stream ends. Rejects the promise if a stream error occurs.
+ *
+ * @param req - The incoming HTTP request to read the body from.
+ * @returns A promise that resolves to the complete request body as a string.
+ */
 function readBody(req: IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
@@ -72,6 +96,15 @@ function readBody(req: IncomingMessage): Promise<string> {
   });
 }
 
+/**
+ * Sends a JSON response by serializing the given data, setting the
+ * `Content-Type` to `application/json` and `Content-Length` headers,
+ * and ending the response stream.
+ *
+ * @param res - The server response object to write to.
+ * @param statusCode - The HTTP status code to send.
+ * @param data - The value to JSON-serialize as the response body.
+ */
 function sendJson(res: ServerResponse, statusCode: number, data: unknown): void {
   const body = JSON.stringify(data);
   res.writeHead(statusCode, {

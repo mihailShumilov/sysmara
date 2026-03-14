@@ -15,6 +15,14 @@ import { runDiagnostics } from '../../diagnostics/index.js';
 import type { SysmaraConfig } from '../../types/index.js';
 import { header, success, error } from '../format.js';
 
+/**
+ * Represents the result of a single diagnostic section in the doctor report.
+ *
+ * @property name - Human-readable label for this diagnostic section (e.g. "Configuration", "Spec Parsing").
+ * @property status - Outcome of the check: `'pass'`, `'warn'`, or `'fail'`.
+ * @property message - Summary message describing the section result.
+ * @property details - Additional detail lines (e.g. individual error/warning messages).
+ */
 interface DoctorSection {
   name: string;
   status: 'pass' | 'warn' | 'fail';
@@ -22,6 +30,12 @@ interface DoctorSection {
   details: string[];
 }
 
+/**
+ * Checks whether a file or directory exists at the given path.
+ *
+ * @param filePath - Absolute or relative path to check.
+ * @returns `true` if the path is accessible, `false` otherwise.
+ */
 async function fileExists(filePath: string): Promise<boolean> {
   try {
     await fs.access(filePath);
@@ -175,6 +189,15 @@ export async function commandDoctor(cwd: string, config: SysmaraConfig, jsonMode
   if (!overallHealthy) process.exit(1);
 }
 
+/**
+ * Renders the doctor report to standard output. In JSON mode, emits a structured
+ * object with a `healthy` flag and an array of section results. In text mode,
+ * prints a formatted summary with pass/warn/fail icons for each section.
+ *
+ * @param sections - Completed diagnostic sections to display.
+ * @param overallHealthy - `true` if all sections passed without errors.
+ * @param jsonMode - When `true`, outputs JSON; otherwise outputs human-readable text.
+ */
 function outputResults(sections: DoctorSection[], overallHealthy: boolean, jsonMode: boolean): void {
   if (jsonMode) {
     console.log(JSON.stringify({

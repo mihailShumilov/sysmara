@@ -222,6 +222,19 @@ export function checkBoundaryViolations(
   return diagnostics;
 }
 
+/**
+ * Detects circular dependencies in the module dependency graph using
+ * depth-first search with an explicit recursion stack.
+ *
+ * Builds a directed adjacency list from each module's `allowedDependencies`
+ * (filtering to only defined module names) and walks the graph, recording
+ * any back-edges that indicate cycles.
+ *
+ * @param modules - The list of module specifications to analyze.
+ * @returns An array of cycles, where each cycle is an ordered array of
+ *   module names ending with a repetition of the cycle's starting node
+ *   (e.g., `['A', 'B', 'C', 'A']`).
+ */
 function detectCycles(modules: ModuleSpec[]): string[][] {
   const cycles: string[][] = [];
   const moduleNames = new Set(modules.map((m) => m.name));

@@ -35,6 +35,14 @@ export interface Route {
   handler: Handler;
 }
 
+/**
+ * Parses a URL path pattern into a compiled regular expression and an ordered
+ * list of parameter names. Segments prefixed with `:` (e.g. `:id`) become
+ * named capture groups; all other segments are regex-escaped for literal matching.
+ *
+ * @param path - The URL path pattern to parse (e.g. `'/users/:id/posts'`).
+ * @returns An object containing the compiled `pattern` RegExp and the extracted `paramNames` array.
+ */
 function parsePath(path: string): { pattern: RegExp; paramNames: string[] } {
   const paramNames: string[] = [];
   const segments = path.split('/');
@@ -51,6 +59,15 @@ function parsePath(path: string): { pattern: RegExp; paramNames: string[] } {
   return { pattern, paramNames };
 }
 
+/**
+ * Computes a numeric specificity score for a route, used to sort routes so that
+ * more specific (static) paths are matched before less specific (dynamic) ones.
+ * Static routes (no parameters) return `0` (highest priority); dynamic routes
+ * return their parameter count (higher count = lower priority).
+ *
+ * @param route - The route to compute specificity for.
+ * @returns A non-negative integer where lower values indicate higher matching priority.
+ */
 function routeSpecificity(route: Route): number {
   // Static routes (no params) are most specific.
   // Among dynamic routes, more segments = more specific.

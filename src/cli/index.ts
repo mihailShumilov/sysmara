@@ -24,6 +24,10 @@ import { commandCheckBoundaries } from './commands/check.js';
 /** Current CLI version string, displayed by `--version`. */
 const VERSION = '0.2.0';
 
+/**
+ * Prints the CLI usage information, listing all available commands and options,
+ * to standard output.
+ */
 function printHelp(): void {
   const help = `
 sysmara v${VERSION} — SysMARA: Model / Architecture / Runtime Abstraction for AI-native backends
@@ -51,6 +55,13 @@ Options:
   console.log(help.trim());
 }
 
+/**
+ * Separates positional arguments from flag options in a raw argument list.
+ *
+ * @param args - Raw CLI arguments (after stripping the node/script prefix).
+ * @returns An object containing the ordered `positional` arguments and a `json` flag
+ *          indicating whether `--json` was present.
+ */
 function parseFlags(args: string[]): { positional: string[]; json: boolean } {
   const positional: string[] = [];
   let json = false;
@@ -66,6 +77,11 @@ function parseFlags(args: string[]): { positional: string[]; json: boolean } {
   return { positional, json };
 }
 
+/**
+ * Main entry point for the sysmara CLI. Parses command-line arguments, resolves
+ * the project configuration from `sysmara.config.yaml`, and dispatches to the
+ * appropriate sub-command handler. Exits with code 1 on unknown commands or errors.
+ */
 async function main(): Promise<void> {
   const rawArgs = process.argv.slice(2);
   const command = rawArgs[0];

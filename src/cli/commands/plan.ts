@@ -13,6 +13,11 @@ import { createEmptyPlan, renderChangePlanTerminal, renderChangePlanJSON } from 
 import type { SysmaraConfig, ChangePlan } from '../../types/index.js';
 import { header, success, error } from '../format.js';
 
+/**
+ * Creates a directory (and any missing parent directories) if it does not already exist.
+ *
+ * @param dirPath - Absolute path of the directory to create.
+ */
 async function ensureDir(dirPath: string): Promise<void> {
   await fs.mkdir(dirPath, { recursive: true });
 }

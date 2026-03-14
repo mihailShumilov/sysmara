@@ -11,10 +11,18 @@ import { parse, stringify } from 'yaml';
 import type { SysmaraConfig } from '../../types/index.js';
 import { success, error } from '../format.js';
 
+/** The spec types that can be scaffolded via the `add` command. */
 type SpecType = 'entity' | 'capability' | 'policy' | 'invariant' | 'module' | 'flow';
 
 const VALID_TYPES: SpecType[] = ['entity', 'capability', 'policy', 'invariant', 'module', 'flow'];
 
+/**
+ * Maps a spec type to its YAML file location and structure.
+ *
+ * @property file - Filename within the spec directory (e.g. `'entities.yaml'`).
+ * @property key - Top-level YAML key that holds the array of entries (e.g. `'entities'`).
+ * @property nameField - Field name used to identify an entry within the array (e.g. `'name'`).
+ */
 interface SpecFileMapping {
   file: string;
   key: string;
@@ -30,6 +38,14 @@ const TYPE_FILE_MAP: Record<SpecType, SpecFileMapping> = {
   flow: { file: 'flows.yaml', key: 'flows', nameField: 'name' },
 };
 
+/**
+ * Returns a starter template object for the given spec type, pre-populated with
+ * the provided name and TODO placeholders for the user to fill in.
+ *
+ * @param type - The spec type to generate a template for.
+ * @param name - The name to assign to the new spec entry.
+ * @returns A plain object representing the default YAML structure for the spec type.
+ */
 function getDefaultTemplate(type: SpecType, name: string): Record<string, unknown> {
   switch (type) {
     case 'entity':

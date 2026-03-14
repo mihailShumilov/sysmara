@@ -11,6 +11,12 @@ import { parseSpecDirectory, crossValidate } from '../../spec/index.js';
 import type { SysmaraConfig, Diagnostic } from '../../types/index.js';
 import { header, success, error, warning, info, table } from '../format.js';
 
+/**
+ * Prints a categorized list of diagnostics to standard output, grouping them
+ * by severity (errors, warnings, info) and including suggestions where available.
+ *
+ * @param diagnostics - The array of diagnostic entries to format and print.
+ */
 function formatDiagnosticsList(diagnostics: Diagnostic[]): void {
   const errors = diagnostics.filter((d) => d.severity === 'error');
   const warnings = diagnostics.filter((d) => d.severity === 'warning');

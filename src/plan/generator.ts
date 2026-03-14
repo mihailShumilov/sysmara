@@ -50,6 +50,14 @@ export interface PlanRequest {
   }>;
 }
 
+/**
+ * Generates a unique plan identifier by computing a truncated SHA-256 hash
+ * of the title and timestamp, prefixed with `"plan-"`.
+ *
+ * @param title - The plan title used as part of the hash input.
+ * @param timestamp - An ISO-8601 timestamp used as part of the hash input.
+ * @returns A string in the format `"plan-<12-char-hex-hash>"`.
+ */
 function generatePlanId(title: string, timestamp: string): string {
   const hash = createHash('sha256')
     .update(`${title}:${timestamp}`)
@@ -58,6 +66,18 @@ function generatePlanId(title: string, timestamp: string): string {
   return `plan-${hash}`;
 }
 
+/**
+ * Classifies the overall risk level of a set of capability changes based on
+ * their combined impact surfaces. The classification rules are:
+ * - `'critical'` — any breaking change combined with a removal action.
+ * - `'high'` — any breaking change, or more than 10 total affected items.
+ * - `'medium'` — more than 5 total affected items, or any removal action.
+ * - `'low'` — all other cases.
+ *
+ * @param impacts - The impact surfaces produced by analyzing each capability change.
+ * @param changes - The capability changes being evaluated.
+ * @returns The computed {@link RiskLevel} for the combined changes.
+ */
 function classifyRisk(
   impacts: ImpactSurface[],
   changes: CapabilityChange[],
@@ -80,6 +100,17 @@ function classifyRisk(
   return 'low';
 }
 
+/**
+ * Collects and deduplicates affected items from multiple impact surfaces for a
+ * given field (e.g. modules, invariants, policies). Each item is classified as
+ * `'direct'` if its name appears in `targetNames`, or `'indirect'` otherwise.
+ * The returned array is sorted alphabetically by name.
+ *
+ * @param impacts - The impact surfaces to extract affected items from.
+ * @param field - The property name on {@link ImpactSurface} to read (e.g. `'affectedModules'`).
+ * @param targetNames - Set of names considered directly targeted by the changes.
+ * @returns A deduplicated, alphabetically sorted array of {@link AffectedItem} entries.
+ */
 function collectAffectedItems(
   impacts: ImpactSurface[],
   field: 'affectedModules' | 'affectedInvariants' | 'affectedPolicies' | 'affectedCapabilities' | 'affectedRoutes' | 'affectedFlows',

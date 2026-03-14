@@ -9,6 +9,15 @@ import type { DiagnosticsReport } from '../types/index.js';
 
 const SEPARATOR = '\u2550'.repeat(39);
 
+/**
+ * Converts a diagnostic severity string to its uppercase display label.
+ *
+ * Maps `'error'` to `'ERROR'`, `'warning'` to `'WARNING'`, and `'info'`
+ * to `'INFO'`. Any unrecognized severity is uppercased as-is.
+ *
+ * @param severity - The severity string to convert (e.g., `'error'`).
+ * @returns The uppercase label suitable for terminal display.
+ */
 function severityLabel(severity: string): string {
   switch (severity) {
     case 'error':
