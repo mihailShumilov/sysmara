@@ -1,0 +1,64 @@
+flows:
+  - name: workspace_onboarding
+    description: >
+      End-to-end onboarding flow when a new workspace is created.
+      Creates the workspace, provisions a default free subscription,
+      and sends a welcome notification to the owner.
+    trigger: create_workspace
+    module: workspaces
+    steps:
+      - name: create_workspace
+        action: create_workspace
+        onFailure: abort
+
+      - name: create_default_subscription
+        action: create_subscription
+        onFailure: compensate
+        compensation: delete_workspace
+
+      - name: send_welcome_notification
+        action: notify_workspace_welcome
+        onFailure: skip
+
+  - name: billing_cycle
+    description: >
+      Recurring billing flow that generates an invoice for a subscription,
+      sends the invoice to the workspace owner, and initiates payment processing.
+    trigger: generate_invoice
+    module: billing
+    steps:
+      - name: generate_invoice
+        action: generate_invoice
+        onFailure: retry
+
+      - name: send_invoice_email
+        action: notify_invoice_issued
+        onFailure: skip
+
+      - name: process_payment
+        action: process_payment
+        onFailure: abort
+
+  - name: ownership_transfer
+    description: >
+      Transfer workspace ownership from one user to another.
+      Validates the new owner exists and is a workspace member,
+      performs the transfer, and notifies both parties.
+    trigger: transfer_workspace_owner
+    module: workspaces
+    steps:
+      - name: validate_new_owner
+        action: validate_new_owner
+        onFailure: abort
+
+      - name: transfer_ownership
+        action: transfer_workspace_owner
+        onFailure: abort
+
+      - name: notify_previous_owner
+        action: notify_ownership_transferred_from
+        onFailure: skip
+
+      - name: notify_new_owner
+        action: notify_ownership_transferred_to
+        onFailure: skip

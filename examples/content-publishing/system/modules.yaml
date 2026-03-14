@@ -1,0 +1,56 @@
+modules:
+  - name: content
+    description: Core content management including article lifecycle and media handling
+    entities:
+      - article
+      - media_asset
+    capabilities:
+      - create_article
+      - get_article
+      - update_article
+      - delete_article
+      - list_articles
+      - submit_for_review
+      - approve_article
+      - reject_article
+      - publish_article
+      - archive_article
+      - upload_media
+    allowedDependencies:
+      - authors
+      - categories
+    forbiddenDependencies: []
+    owner: content-team
+
+  - name: authors
+    description: Author profile management and editorial role assignment
+    entities:
+      - author
+    capabilities: []
+    allowedDependencies: []
+    forbiddenDependencies: []
+    owner: platform-team
+
+  - name: categories
+    description: Content categorization and hierarchical taxonomy management
+    entities:
+      - category
+    capabilities:
+      - create_category
+      - update_category
+    allowedDependencies: []
+    forbiddenDependencies: []
+    owner: content-team
+
+  - name: engagement
+    description: Reader engagement including comments and moderation workflows
+    entities:
+      - comment
+    capabilities:
+      - create_comment
+      - moderate_comment
+    allowedDependencies:
+      - content
+      - authors
+    forbiddenDependencies: []
+    owner: community-team

@@ -1,0 +1,15 @@
+safeEditZones:
+  - path: app/generated/**
+    zone: generated
+    description: Compiler-generated code
+  - path: app/capabilities/**
+    zone: editable
+    description: Capability implementations
+  - path: app/protected/media/**
+    zone: protected
+    owner: infrastructure
+    description: Media storage infrastructure
+  - path: system/**
+    zone: editable
+    owner: architect
+    description: System specifications

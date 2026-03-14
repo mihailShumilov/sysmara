@@ -1,0 +1,198 @@
+entities:
+  - name: user
+    module: identity
+    description: A system user with role-based access control
+    fields:
+      - name: id
+        type: uuid
+        required: true
+        description: Unique user identifier
+      - name: email
+        type: string
+        required: true
+        description: User email address
+      - name: name
+        type: string
+        required: true
+        description: Full name of the user
+      - name: role
+        type: enum
+        required: true
+        description: Role determining access level
+      - name: department
+        type: string
+        required: true
+        description: Department the user belongs to
+      - name: is_active
+        type: boolean
+        required: false
+        description: Whether the user account is active
+      - name: created_at
+        type: datetime
+        required: true
+        description: Account creation timestamp
+    invariants:
+      - deactivated_users_cannot_act
+      - role_change_requires_approval
+
+  - name: approval_request
+    module: approvals
+    description: A request that requires one or more approvals before execution
+    fields:
+      - name: id
+        type: uuid
+        required: true
+        description: Unique request identifier
+      - name: requester_id
+        type: uuid
+        required: true
+        description: The user who submitted the request
+      - name: type
+        type: enum
+        required: true
+        description: Category of the approval request
+      - name: title
+        type: string
+        required: true
+        description: Short summary of the request
+      - name: description
+        type: text
+        required: true
+        description: Detailed explanation of what is being requested and why
+      - name: status
+        type: enum
+        required: false
+        description: Current state of the request
+      - name: priority
+        type: enum
+        required: false
+        description: Urgency level of the request
+      - name: metadata
+        type: json
+        required: false
+        description: Additional context specific to the request type
+      - name: created_at
+        type: datetime
+        required: true
+        description: When the request was submitted
+      - name: resolved_at
+        type: datetime
+        required: false
+        description: When the request reached a terminal state
+      - name: resolver_id
+        type: uuid
+        required: false
+        description: The user who made the final decision
+    invariants:
+      - requester_cannot_approve_own_request
+      - critical_requests_require_escalation
+
+  - name: approval_step
+    module: approvals
+    description: A single review step within a multi-step approval workflow
+    fields:
+      - name: id
+        type: uuid
+        required: true
+        description: Unique step identifier
+      - name: request_id
+        type: uuid
+        required: true
+        description: The parent approval request
+      - name: reviewer_id
+        type: uuid
+        required: true
+        description: The user assigned to review this step
+      - name: order
+        type: integer
+        required: true
+        description: Sequence number determining step execution order
+      - name: status
+        type: enum
+        required: false
+        description: Current state of this review step
+      - name: comment
+        type: text
+        required: false
+        description: Reviewer notes or justification for the decision
+      - name: decided_at
+        type: datetime
+        required: false
+        description: When the reviewer made their decision
+    invariants:
+      - approval_steps_must_be_sequential
+      - requester_cannot_approve_own_request
+
+  - name: audit_log
+    module: audit
+    description: Immutable record of all significant system actions
+    fields:
+      - name: id
+        type: uuid
+        required: true
+        description: Unique log entry identifier
+      - name: actor_id
+        type: uuid
+        required: true
+        description: The user who performed the action
+      - name: action
+        type: string
+        required: true
+        description: The action that was performed (e.g. approve_step, update_user_role)
+      - name: resource_type
+        type: string
+        required: true
+        description: Type of resource affected (e.g. approval_request, user, protected_resource)
+      - name: resource_id
+        type: uuid
+        required: true
+        description: Identifier of the affected resource
+      - name: details
+        type: json
+        required: false
+        description: Structured data capturing before/after state or action parameters
+      - name: ip_address
+        type: string
+        required: true
+        description: IP address of the actor at time of action
+      - name: timestamp
+        type: datetime
+        required: true
+        description: When the action occurred
+    invariants:
+      - audit_log_immutable
+
+  - name: protected_resource
+    module: resources
+    description: A system resource that requires authorization and possibly approval to access
+    fields:
+      - name: id
+        type: uuid
+        required: true
+        description: Unique resource identifier
+      - name: name
+        type: string
+        required: true
+        description: Human-readable resource name
+      - name: type
+        type: enum
+        required: true
+        description: Category of the protected resource
+      - name: sensitivity
+        type: enum
+        required: true
+        description: Classification level determining access requirements
+      - name: owner_id
+        type: uuid
+        required: true
+        description: The user responsible for this resource
+      - name: description
+        type: text
+        required: false
+        description: What this resource contains or controls
+      - name: created_at
+        type: datetime
+        required: true
+        description: When the resource was registered
+    invariants:
+      - restricted_data_requires_two_approvals

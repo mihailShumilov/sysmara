@@ -1,0 +1,90 @@
+id: plan-example-team-billing
+title: Add team billing with shared subscriptions
+description: >
+  Add team billing capabilities allowing workspaces to share subscription costs
+  across team members while preserving personal subscriptions.
+createdAt: "2025-03-14T00:00:00Z"
+author: architect
+status: draft
+risk: medium
+summary:
+  intent: Enable shared team billing alongside personal subscriptions
+  scope: billing, workspaces
+  estimatedImpactRadius: 8
+  requiresHumanReview: true
+  breakingChanges: false
+capabilityChanges:
+  - capability: create_team_subscription
+    action: add
+    description: Create a team subscription shared across workspace members
+    newEntities:
+      - team_subscription
+    newPolicies:
+      - team_billing_admin_policy
+    newInvariants:
+      - team_subscription_requires_pro_plan
+    breakingChange: false
+  - capability: split_invoice
+    action: add
+    description: Split an invoice across team members
+    newEntities: []
+    newPolicies: []
+    newInvariants:
+      - split_amounts_must_equal_total
+    breakingChange: false
+affectedEntities:
+  - name: subscription
+    impact: direct
+    description: Modified to support team subscriptions
+  - name: invoice
+    impact: direct
+    description: Needs split billing support
+  - name: workspace
+    impact: indirect
+    description: Team billing context
+affectedModules:
+  - name: billing
+    impact: direct
+    description: Primary module for billing changes
+  - name: workspaces
+    impact: indirect
+    description: Team context affects workspace
+affectedPolicies:
+  - name: billing_admin_manage_subscriptions
+    impact: direct
+    description: Must be extended for team subscriptions
+affectedInvariants:
+  - name: no_duplicate_active_subscription
+    impact: direct
+    description: Must accommodate team + personal subscriptions coexisting
+affectedRoutes: []
+migrationNotes:
+  - Add team_subscription table/collection
+  - Migrate existing subscriptions to include type field (personal/team)
+  - Update invoice generation to support split billing
+generatedArtifactsToRefresh:
+  - generated/routes/create_team_subscription.ts
+  - generated/routes/split_invoice.ts
+  - generated/tests/create_team_subscription.test.ts
+  - generated/tests/split_invoice.test.ts
+testsLikelyAffected:
+  - tests/capabilities/create_subscription.test.ts
+  - tests/capabilities/generate_invoice.test.ts
+specsToUpdate:
+  - system/entities.yaml
+  - system/capabilities.yaml
+  - system/policies.yaml
+  - system/invariants.yaml
+  - system/modules.yaml
+humanReviewFlags:
+  - Affects billing invariants — verify no duplicate subscription logic
+  - New team billing policy needs security review
+  - Invoice splitting requires financial accuracy review
+rolloutNotes:
+  - Deploy in stages: schema migration first, then capabilities
+  - Feature flag recommended for team billing
+  - Monitor invoice accuracy for first billing cycle
+openQuestions:
+  - Should team subscriptions support mixed billing cycles?
+  - What happens to team subscription when workspace owner transfers?
+  - How to handle partial payments in split invoices?

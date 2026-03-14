@@ -1,0 +1,90 @@
+glossary:
+  - term: article
+    definition: >
+      A piece of written content that moves through a managed lifecycle from creation to
+      publication. Articles are the primary content unit in the system.
+
+  - term: draft
+    definition: >
+      The initial status of an article after creation. In draft status, the article is only
+      visible to its author and editors. The author can freely edit the content.
+
+  - term: in_review
+    definition: >
+      The status of an article after it has been submitted for editorial review. The article
+      is locked from author edits and awaits an editor's decision to approve or reject.
+
+  - term: approved
+    definition: >
+      The status of an article that has passed editorial review. An approved article is ready
+      for publication by a chief editor but is not yet publicly visible.
+
+  - term: published
+    definition: >
+      The status of an article that is live and publicly accessible. Published articles can
+      receive comments and appear in feeds and search results.
+
+  - term: archived
+    definition: >
+      The terminal status of an article that has been removed from public visibility. Archived
+      articles are immutable and cannot be modified or deleted.
+
+  - term: review
+    definition: >
+      The editorial evaluation process where an editor reads a submitted article and decides
+      whether it meets quality standards for publication.
+
+  - term: publication
+    definition: >
+      The act of making an approved article publicly visible. Only chief editors and admins
+      can publish, and writers cannot publish their own articles.
+
+  - term: archival
+    definition: >
+      The process of retiring a published article from public visibility. Archival is
+      irreversible and makes the article immutable.
+
+  - term: slug
+    definition: >
+      A URL-friendly string derived from a title, used to create human-readable URLs.
+      Slugs must be unique across articles and across categories respectively.
+
+  - term: category
+    definition: >
+      A hierarchical taxonomy label used to organize articles by topic. Categories can
+      have parent categories to form a tree structure.
+
+  - term: comment moderation
+    definition: >
+      The process of reviewing user-submitted comments before they become publicly visible.
+      Comments pass through automated spam detection and manual editorial review.
+
+  - term: media asset
+    definition: >
+      An uploaded file (image, video, document) associated with an article. Media assets
+      are stored in protected infrastructure and subject to a 50MB size limit.
+
+  - term: author
+    definition: >
+      A user profile with an editorial role (writer, editor, chief_editor, admin) that
+      determines their permissions within the content publishing workflow.
+
+  - term: writer
+    definition: >
+      An author role that can create and edit their own articles, submit them for review,
+      and upload media. Writers cannot approve, publish, or moderate content.
+
+  - term: editor
+    definition: >
+      An author role that can review, approve, and reject articles, manage categories,
+      and moderate comments. Editors cannot publish articles.
+
+  - term: chief_editor
+    definition: >
+      An author role with full editorial authority including the ability to publish and
+      archive articles. Chief editors can perform all editor actions plus publication.
+
+  - term: state transition
+    definition: >
+      A change in an article's lifecycle status. Transitions are constrained by the
+      article_state_transitions_only_forward invariant to prevent invalid status jumps.

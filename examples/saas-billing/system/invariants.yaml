@@ -1,0 +1,56 @@
+invariants:
+  - name: email_must_be_unique
+    description: No two users can share the same email address
+    entity: user
+    rule: email must be unique across all users
+    severity: error
+    enforcement: runtime
+
+  - name: workspace_must_have_owner
+    description: Every workspace must be linked to a valid existing user as its owner
+    entity: workspace
+    rule: owner_id must reference a valid user.id
+    severity: error
+    enforcement: runtime
+
+  - name: workspace_name_not_empty
+    description: Workspace name must not be an empty string
+    entity: workspace
+    rule: name must not be empty
+    severity: error
+    enforcement: runtime
+
+  - name: subscription_must_have_workspace
+    description: Every subscription must reference an existing workspace
+    entity: subscription
+    rule: workspace_id must reference a valid workspace.id
+    severity: error
+    enforcement: runtime
+
+  - name: no_duplicate_active_subscription
+    description: A workspace cannot have more than one active subscription at a time
+    entity: subscription
+    rule: workspace_id must be unique among subscriptions where status is active or trialing
+    severity: error
+    enforcement: runtime
+
+  - name: invoice_amount_must_be_positive
+    description: Invoice amounts must be greater than zero
+    entity: invoice
+    rule: amount_cents must be greater than 0
+    severity: error
+    enforcement: runtime
+
+  - name: invoice_must_have_subscription
+    description: Every invoice must reference an existing subscription
+    entity: invoice
+    rule: subscription_id must reference a valid subscription.id
+    severity: error
+    enforcement: runtime
+
+  - name: cannot_downgrade_with_unpaid_invoices
+    description: A subscription cannot be downgraded if the workspace has unpaid invoices
+    entity: subscription
+    rule: no invoices with status open or past_due may exist for the subscription when downgrading
+    severity: error
+    enforcement: runtime

@@ -1,0 +1,146 @@
+policies:
+  - name: writer_create_own
+    description: Writers can create and update their own articles, comments, and media uploads
+    actor: writer
+    effect: allow
+    conditions:
+      - field: caller.role
+        operator: in
+        value:
+          - writer
+          - editor
+          - chief_editor
+          - admin
+      - field: caller.id
+        operator: eq
+        value: resource.author_id
+    capabilities:
+      - create_article
+      - update_article
+      - submit_for_review
+      - get_article
+      - list_articles
+      - create_comment
+      - upload_media
+
+  - name: editor_review
+    description: Editors can review, approve, and reject articles and manage categories
+    actor: editor
+    effect: allow
+    conditions:
+      - field: caller.role
+        operator: in
+        value:
+          - editor
+          - chief_editor
+          - admin
+    capabilities:
+      - get_article
+      - list_articles
+      - approve_article
+      - reject_article
+      - create_category
+      - update_category
+      - create_comment
+      - moderate_comment
+
+  - name: chief_editor_publish
+    description: Only chief editors and admins can publish or archive articles
+    actor: chief_editor
+    effect: allow
+    conditions:
+      - field: caller.role
+        operator: in
+        value:
+          - chief_editor
+          - admin
+    capabilities:
+      - publish_article
+      - archive_article
+
+  - name: admin_full_access
+    description: Administrators have unrestricted access to all capabilities
+    actor: admin
+    effect: allow
+    conditions:
+      - field: caller.role
+        operator: eq
+        value: admin
+    capabilities:
+      - create_article
+      - get_article
+      - update_article
+      - delete_article
+      - list_articles
+      - submit_for_review
+      - approve_article
+      - reject_article
+      - publish_article
+      - archive_article
+      - create_category
+      - update_category
+      - create_comment
+      - moderate_comment
+      - upload_media
+
+  - name: author_manage_own_drafts
+    description: Authors can only modify articles that are still in draft status
+    actor: author
+    effect: allow
+    conditions:
+      - field: caller.id
+        operator: eq
+        value: resource.author_id
+      - field: resource.status
+        operator: eq
+        value: draft
+    capabilities:
+      - update_article
+
+  - name: editor_moderate_comments
+    description: Editors and above can moderate comments on any article
+    actor: editor
+    effect: allow
+    conditions:
+      - field: caller.role
+        operator: in
+        value:
+          - editor
+          - chief_editor
+          - admin
+    capabilities:
+      - moderate_comment
+
+  - name: public_read_published
+    description: Anyone can read articles that have been published
+    actor: public
+    effect: allow
+    conditions:
+      - field: resource.status
+        operator: eq
+        value: published
+      - field: action
+        operator: in
+        value:
+          - get_article
+          - list_articles
+    capabilities:
+      - get_article
+      - list_articles
+
+  - name: writer_cannot_publish_own
+    description: Writers cannot publish articles they authored, preventing self-publication
+    actor: writer
+    effect: deny
+    conditions:
+      - field: caller.role
+        operator: eq
+        value: writer
+      - field: caller.id
+        operator: eq
+        value: resource.author_id
+      - field: action
+        operator: eq
+        value: publish_article
+    capabilities:
+      - publish_article

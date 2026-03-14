@@ -1,0 +1,189 @@
+entities:
+  - name: article
+    description: A content article that moves through a lifecycle from draft to publication
+    module: content
+    fields:
+      - name: id
+        type: string
+        required: true
+        description: Unique article identifier
+      - name: title
+        type: string
+        required: true
+        description: Article title
+      - name: slug
+        type: string
+        required: true
+        description: URL-friendly slug derived from title
+      - name: body
+        type: text
+        required: true
+        description: Full article body content in markdown
+      - name: status
+        type: string
+        required: true
+        description: Lifecycle status (draft, in_review, approved, published, archived)
+      - name: author_id
+        type: string
+        required: true
+        description: ID of the author who created this article
+      - name: reviewer_id
+        type: string
+        required: false
+        description: ID of the editor assigned to review this article
+      - name: category_id
+        type: string
+        required: false
+        description: ID of the category this article belongs to
+      - name: published_at
+        type: date
+        required: false
+        description: Timestamp when the article was published
+      - name: created_at
+        type: date
+        required: true
+        description: Timestamp when the article was created
+      - name: updated_at
+        type: date
+        required: true
+        description: Timestamp of the last modification
+    invariants:
+      - slug_must_be_unique
+      - published_article_must_have_reviewer
+
+  - name: author
+    description: A content author with a specific editorial role
+    module: authors
+    fields:
+      - name: id
+        type: string
+        required: true
+        description: Unique author identifier
+      - name: user_id
+        type: string
+        required: true
+        description: Reference to the underlying user account
+      - name: display_name
+        type: string
+        required: true
+        description: Public display name used on bylines
+      - name: bio
+        type: text
+        required: false
+        description: Author biography
+      - name: role
+        type: string
+        required: true
+        description: Editorial role (writer, editor, chief_editor, admin)
+      - name: created_at
+        type: date
+        required: true
+        description: Timestamp when the author profile was created
+    invariants:
+      - author_must_have_user
+
+  - name: category
+    description: A hierarchical content category for organizing articles
+    module: categories
+    fields:
+      - name: id
+        type: string
+        required: true
+        description: Unique category identifier
+      - name: name
+        type: string
+        required: true
+        description: Category display name
+      - name: slug
+        type: string
+        required: true
+        description: URL-friendly category slug
+      - name: description
+        type: text
+        required: false
+        description: Category description
+      - name: parent_id
+        type: string
+        required: false
+        description: ID of parent category for hierarchy
+      - name: active
+        type: boolean
+        required: true
+        description: Whether the category is active and available for use
+      - name: created_at
+        type: date
+        required: true
+        description: Timestamp when the category was created
+    invariants:
+      - category_slug_must_be_unique
+      - category_cannot_be_own_parent
+
+  - name: comment
+    description: A reader comment attached to a published article
+    module: engagement
+    fields:
+      - name: id
+        type: string
+        required: true
+        description: Unique comment identifier
+      - name: article_id
+        type: string
+        required: true
+        description: ID of the article this comment is attached to
+      - name: author_id
+        type: string
+        required: true
+        description: ID of the author who wrote this comment
+      - name: body
+        type: text
+        required: true
+        description: Comment body text
+      - name: status
+        type: string
+        required: true
+        description: Moderation status (pending, approved, rejected, spam)
+      - name: created_at
+        type: date
+        required: true
+        description: Timestamp when the comment was submitted
+    invariants:
+      - comment_must_reference_published_article
+
+  - name: media_asset
+    description: An uploaded media file associated with an article
+    module: content
+    fields:
+      - name: id
+        type: string
+        required: true
+        description: Unique media asset identifier
+      - name: filename
+        type: string
+        required: true
+        description: Original filename of the uploaded file
+      - name: url
+        type: string
+        required: true
+        description: Storage URL where the media is accessible
+      - name: mime_type
+        type: string
+        required: true
+        description: MIME type of the file (e.g., image/png, video/mp4)
+      - name: size_bytes
+        type: number
+        required: true
+        description: File size in bytes
+      - name: uploaded_by
+        type: string
+        required: true
+        description: ID of the author who uploaded this asset
+      - name: article_id
+        type: string
+        required: false
+        description: ID of the article this media is attached to
+      - name: created_at
+        type: date
+        required: true
+        description: Timestamp when the file was uploaded
+    invariants:
+      - media_size_limit

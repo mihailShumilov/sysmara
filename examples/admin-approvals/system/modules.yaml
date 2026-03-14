@@ -1,0 +1,65 @@
+modules:
+  - name: identity
+    description: >
+      User management and authentication. Owns user accounts, roles, and
+      department assignments. Provides the actor context used by all other
+      modules for policy evaluation.
+    entities:
+      - user
+    capabilities:
+      - create_user
+      - update_user_role
+      - deactivate_user
+    allowedDependencies: []
+    forbiddenDependencies: []
+
+  - name: approvals
+    description: >
+      Multi-step approval workflow engine. Manages approval requests and their
+      individual review steps. Enforces sequential step ordering, self-service
+      blocking, and escalation rules.
+    entities:
+      - approval_request
+      - approval_step
+    capabilities:
+      - create_approval_request
+      - get_approval_request
+      - list_approval_requests
+      - approve_step
+      - reject_step
+      - escalate_request
+    allowedDependencies:
+      - identity
+    forbiddenDependencies: []
+
+  - name: audit
+    description: >
+      Immutable audit trail for compliance and forensics. Records every
+      significant action with actor, resource, and contextual details.
+      Audit entries cannot be modified or deleted once created.
+    entities:
+      - audit_log
+    capabilities:
+      - get_audit_log
+      - list_audit_logs
+    allowedDependencies:
+      - identity
+    forbiddenDependencies: []
+
+  - name: resources
+    description: >
+      Protected resource management. Controls access to sensitive system
+      configurations, user data, financial data, and deployment targets.
+      Integrates with the approvals module to enforce approval-gated access
+      for confidential and restricted resources.
+    entities:
+      - protected_resource
+    capabilities:
+      - export_protected_data
+      - modify_system_config
+      - trigger_deployment
+    allowedDependencies:
+      - identity
+      - approvals
+      - audit
+    forbiddenDependencies: []

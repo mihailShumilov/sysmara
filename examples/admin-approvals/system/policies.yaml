@@ -1,0 +1,120 @@
+policies:
+  - name: super_admin_full_access
+    description: Super admins have unrestricted access to all capabilities
+    actor: super_admin
+    effect: allow
+    conditions:
+      - field: actor.role
+        operator: eq
+        value: super_admin
+    capabilities:
+      - create_user
+      - update_user_role
+      - deactivate_user
+      - create_approval_request
+      - get_approval_request
+      - list_approval_requests
+      - approve_step
+      - reject_step
+      - escalate_request
+      - get_audit_log
+      - list_audit_logs
+      - export_protected_data
+      - modify_system_config
+      - trigger_deployment
+
+  - name: admin_manage_users
+    description: Admins can create users, change roles, and deactivate accounts
+    actor: admin
+    effect: allow
+    conditions:
+      - field: actor.role
+        operator: eq
+        value: admin
+    capabilities:
+      - create_user
+      - update_user_role
+      - deactivate_user
+      - create_approval_request
+      - get_approval_request
+      - list_approval_requests
+      - escalate_request
+
+  - name: reviewer_approve_requests
+    description: Reviewers can view, approve, reject, and escalate approval requests
+    actor: reviewer
+    effect: allow
+    conditions:
+      - field: actor.role
+        operator: in
+        value: [reviewer, admin]
+    capabilities:
+      - approve_step
+      - reject_step
+      - escalate_request
+      - get_approval_request
+      - list_approval_requests
+      - create_approval_request
+
+  - name: member_request_only
+    description: Members can only create approval requests and view their own
+    actor: member
+    effect: allow
+    conditions:
+      - field: actor.role
+        operator: eq
+        value: member
+    capabilities:
+      - create_approval_request
+      - get_approval_request
+      - list_approval_requests
+
+  - name: self_service_blocked
+    description: Users cannot approve or reject their own approval requests
+    actor: any
+    effect: deny
+    conditions:
+      - field: resource.approval_request.requester_id
+        operator: eq
+        value: actor.id
+    capabilities:
+      - approve_step
+      - reject_step
+
+  - name: restricted_data_requires_approval
+    description: Accessing confidential or restricted resources requires a prior approved request
+    actor: any
+    effect: deny
+    conditions:
+      - field: resource.sensitivity
+        operator: in
+        value: [confidential, restricted]
+      - field: input.approval_request_id
+        operator: exists
+        value: "false"
+    capabilities:
+      - export_protected_data
+      - modify_system_config
+
+  - name: deployment_requires_two_approvals
+    description: Deployments require at least two independent reviewer approvals before execution
+    actor: any
+    effect: deny
+    conditions:
+      - field: resource.approval_request.approved_step_count
+        operator: neq
+        value: "2"
+    capabilities:
+      - trigger_deployment
+
+  - name: audit_log_read_admin_only
+    description: Only admins and super admins can access audit logs
+    actor: admin
+    effect: allow
+    conditions:
+      - field: actor.role
+        operator: in
+        value: [admin, super_admin]
+    capabilities:
+      - get_audit_log
+      - list_audit_logs

@@ -1,0 +1,127 @@
+entities:
+  - name: user
+    description: A registered user who can own workspaces and subscriptions
+    module: users
+    fields:
+      - name: id
+        type: string
+        required: true
+        description: Unique user identifier
+      - name: email
+        type: string
+        required: true
+        description: User email address
+      - name: name
+        type: string
+        required: true
+        description: Display name
+      - name: role
+        type: string
+        required: true
+        description: System role (admin, member, billing_admin)
+      - name: created_at
+        type: date
+        required: true
+        description: Account creation timestamp
+    invariants:
+      - email_must_be_unique
+
+  - name: workspace
+    description: A team workspace that groups users and billing
+    module: workspaces
+    fields:
+      - name: id
+        type: string
+        required: true
+        description: Unique workspace identifier
+      - name: name
+        type: string
+        required: true
+        description: Workspace name
+      - name: owner_id
+        type: string
+        required: true
+        description: User ID of workspace owner
+      - name: plan
+        type: string
+        required: true
+        description: Current subscription plan (free, pro, enterprise)
+      - name: created_at
+        type: date
+        required: true
+        description: Creation timestamp
+    invariants:
+      - workspace_must_have_owner
+      - workspace_name_not_empty
+
+  - name: subscription
+    description: A billing subscription linked to a workspace
+    module: billing
+    fields:
+      - name: id
+        type: string
+        required: true
+        description: Subscription identifier
+      - name: workspace_id
+        type: string
+        required: true
+        description: Workspace this subscription belongs to
+      - name: plan
+        type: string
+        required: true
+        description: Subscription plan (free, pro, enterprise)
+      - name: status
+        type: string
+        required: true
+        description: Subscription status (active, cancelled, past_due, trialing)
+      - name: billing_cycle
+        type: string
+        required: true
+        description: Billing cycle (monthly, yearly)
+      - name: current_period_start
+        type: date
+        required: true
+        description: Start of current billing period
+      - name: current_period_end
+        type: date
+        required: true
+        description: End of current billing period
+    invariants:
+      - subscription_must_have_workspace
+      - no_duplicate_active_subscription
+
+  - name: invoice
+    description: A billing invoice generated for a subscription
+    module: billing
+    fields:
+      - name: id
+        type: string
+        required: true
+        description: Invoice identifier
+      - name: subscription_id
+        type: string
+        required: true
+        description: Related subscription
+      - name: amount_cents
+        type: number
+        required: true
+        description: Invoice amount in cents
+      - name: currency
+        type: string
+        required: true
+        description: Currency code (USD, EUR)
+      - name: status
+        type: string
+        required: true
+        description: Invoice status (draft, open, paid, void, uncollectible)
+      - name: issued_at
+        type: date
+        required: true
+        description: When the invoice was issued
+      - name: due_at
+        type: date
+        required: true
+        description: Payment due date
+    invariants:
+      - invoice_amount_must_be_positive
+      - invoice_must_have_subscription

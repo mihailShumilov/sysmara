@@ -1,0 +1,81 @@
+import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
+import * as process from 'node:process';
+import { parseSpecDirectory } from '../../spec/index.js';
+import { compileCapabilities } from '../../compiler/index.js';
+import type { SysmaraConfig } from '../../types/index.js';
+import { header, success, error, info } from '../format.js';
+
+async function ensureDir(dirPath: string): Promise<void> {
+  await fs.mkdir(dirPath, { recursive: true });
+}
+
+async function writeFile(filePath: string, content: string): Promise<void> {
+  await ensureDir(path.dirname(filePath));
+  await fs.writeFile(filePath, content, 'utf-8');
+}
+
+export async function commandCompile(cwd: string, config: SysmaraConfig, jsonMode: boolean): Promise<void> {
+  const specDir = path.resolve(cwd, config.specDir);
+  const generatedDir = path.resolve(cwd, config.generatedDir);
+  const frameworkDir = path.resolve(cwd, config.frameworkDir);
+
+  if (!jsonMode) console.log(header('Capability Compiler'));
+
+  const result = await parseSpecDirectory(specDir);
+
+  if (result.diagnostics.length > 0 && !jsonMode) {
+    for (const d of result.diagnostics) {
+      console.log(`  [${d.severity.toUpperCase()}] ${d.message}`);
+    }
+  }
+
+  if (!result.specs) {
+    if (jsonMode) {
+      console.log(JSON.stringify({ success: false, diagnostics: result.diagnostics }, null, 2));
+    } else {
+      console.error(error('Failed to parse specs. Fix the errors above and try again.'));
+    }
+    process.exit(1);
+  }
+
+  const specs = result.specs;
+  const compiled = compileCapabilities(specs, generatedDir);
+
+  await ensureDir(generatedDir);
+  for (const file of compiled.files) {
+    const filePath = path.join(generatedDir, file.path);
+    await writeFile(filePath, file.content);
+  }
+
+  await ensureDir(frameworkDir);
+  await writeFile(
+    path.join(frameworkDir, 'generated-manifest.json'),
+    JSON.stringify(compiled.manifest, null, 2),
+  );
+
+  if (jsonMode) {
+    console.log(JSON.stringify({
+      success: true,
+      files: compiled.files.map((f) => f.path),
+      diagnostics: compiled.diagnostics,
+      manifest: compiled.manifest,
+    }, null, 2));
+  } else {
+    console.log('');
+    console.log(info(`Generated ${compiled.files.length} file(s):`));
+    for (const file of compiled.files) {
+      console.log(`    ${file.path}`);
+    }
+
+    if (compiled.diagnostics.length > 0) {
+      console.log('');
+      for (const d of compiled.diagnostics) {
+        console.log(`  [${d.severity.toUpperCase()}] ${d.message}`);
+      }
+    }
+
+    console.log('');
+    console.log(success(`Files written to ${config.generatedDir}/`));
+  }
+}

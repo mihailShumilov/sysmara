@@ -1,0 +1,81 @@
+glossary:
+  - term: workspace
+    definition: >
+      A collaborative environment that groups users together under shared billing
+      and permissions. Every workspace has exactly one owner and can have multiple
+      members. Workspaces are the primary billing unit in the system.
+
+  - term: subscription
+    definition: >
+      A recurring billing agreement between a workspace and the platform.
+      Each workspace can have at most one active subscription at a time.
+      Subscriptions define the plan tier and billing cycle.
+
+  - term: invoice
+    definition: >
+      A financial document representing an amount owed for a billing period.
+      Invoices are generated automatically at the end of each billing cycle
+      and track payment status from draft through paid or voided.
+
+  - term: billing cycle
+    definition: >
+      The recurring interval at which a subscription is billed. Supported
+      cycles are monthly (every 30 days) and yearly (every 365 days).
+      The cycle determines when invoices are generated.
+
+  - term: plan
+    definition: >
+      A subscription tier that determines feature access and pricing.
+      Available plans are free (no charge, limited features), pro (paid,
+      full features), and enterprise (custom pricing, dedicated support).
+
+  - term: workspace owner
+    definition: >
+      The user who created the workspace or to whom ownership has been
+      transferred. Owners have full administrative control over the workspace
+      including billing, membership, and the ability to transfer ownership.
+
+  - term: billing admin
+    definition: >
+      A system-level role granting a user the ability to manage subscriptions
+      and invoices across all workspaces. This role is typically assigned to
+      finance or operations staff.
+
+  - term: member
+    definition: >
+      A user who belongs to a workspace but does not own it. Members have
+      read-only access to workspace data unless granted additional permissions.
+      Members cannot modify billing or workspace settings.
+
+  - term: plan upgrade
+    definition: >
+      Changing a subscription from a lower-tier plan to a higher-tier plan
+      (e.g., free to pro, or pro to enterprise). Upgrades take effect
+      immediately and may generate a prorated invoice.
+
+  - term: plan downgrade
+    definition: >
+      Changing a subscription from a higher-tier plan to a lower-tier plan
+      (e.g., enterprise to pro, or pro to free). Downgrades are blocked if
+      unpaid invoices exist and typically take effect at the end of the
+      current billing period.
+
+  - term: invoice status
+    definition: >
+      The lifecycle state of an invoice. Possible statuses are draft (being
+      prepared), open (issued and awaiting payment), paid (payment received),
+      void (cancelled and no longer collectible), and uncollectible (payment
+      failed after all retry attempts).
+
+  - term: subscription status
+    definition: >
+      The lifecycle state of a subscription. Possible statuses are active
+      (currently in use), cancelled (terminated by the owner), past_due
+      (payment failed and awaiting resolution), and trialing (in a free
+      trial period before first charge).
+
+  - term: ownership transfer
+    definition: >
+      The process of changing a workspace's owner from one user to another.
+      Only the current owner or a system admin can initiate a transfer.
+      The new owner must be an existing member of the workspace.

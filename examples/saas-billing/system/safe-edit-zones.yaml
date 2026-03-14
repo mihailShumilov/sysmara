@@ -1,0 +1,17 @@
+safeEditZones:
+  - path: app/generated/**
+    zone: generated
+    description: Compiler-generated code — do not edit
+
+  - path: app/capabilities/**
+    zone: editable
+    description: Capability implementations
+
+  - path: app/protected/**
+    zone: protected
+    description: Billing infrastructure — requires authorization
+
+  - path: system/**
+    zone: editable
+    owner: architect
+    description: System specifications

@@ -1,0 +1,242 @@
+import type { ChangePlan } from '../types/index.js';
+
+function riskBadge(risk: string): string {
+  const badges: Record<string, string> = {
+    low: '[LOW]',
+    medium: '[MEDIUM]',
+    high: '[HIGH]',
+    critical: '[CRITICAL]',
+  };
+  return badges[risk] ?? `[${risk.toUpperCase()}]`;
+}
+
+function bulletList(items: string[], indent: number = 0): string {
+  const pad = '  '.repeat(indent);
+  return items.map((item) => `${pad}- ${item}`).join('\n');
+}
+
+export function renderChangePlanMarkdown(plan: ChangePlan): string {
+  const lines: string[] = [];
+
+  lines.push(`# Change Plan: ${plan.title}`);
+  lines.push('');
+  lines.push(`**ID:** \`${plan.id}\``);
+  lines.push(`**Status:** ${plan.status}`);
+  lines.push(`**Risk:** ${riskBadge(plan.risk)}`);
+  lines.push(`**Author:** ${plan.author}`);
+  lines.push(`**Created:** ${plan.createdAt}`);
+  lines.push('');
+  lines.push('## Summary');
+  lines.push('');
+  lines.push(`**Intent:** ${plan.summary.intent}`);
+  lines.push(`**Scope:** ${plan.summary.scope || 'TBD'}`);
+  lines.push(`**Impact Radius:** ${plan.summary.estimatedImpactRadius} affected items`);
+  lines.push(`**Requires Human Review:** ${plan.summary.requiresHumanReview ? 'Yes' : 'No'}`);
+  lines.push(`**Breaking Changes:** ${plan.summary.breakingChanges ? 'Yes' : 'No'}`);
+  lines.push('');
+
+  if (plan.description) {
+    lines.push('## Description');
+    lines.push('');
+    lines.push(plan.description);
+    lines.push('');
+  }
+
+  if (plan.capabilityChanges.length > 0) {
+    lines.push('## Capability Changes');
+    lines.push('');
+    for (const change of plan.capabilityChanges) {
+      const breaking = change.breakingChange ? ' **[BREAKING]**' : '';
+      lines.push(`### \`${change.capability}\` — ${change.action}${breaking}`);
+      lines.push('');
+      lines.push(change.description);
+      if (change.newEntities && change.newEntities.length > 0) {
+        lines.push(`- New entities: ${change.newEntities.join(', ')}`);
+      }
+      if (change.newPolicies && change.newPolicies.length > 0) {
+        lines.push(`- New policies: ${change.newPolicies.join(', ')}`);
+      }
+      if (change.newInvariants && change.newInvariants.length > 0) {
+        lines.push(`- New invariants: ${change.newInvariants.join(', ')}`);
+      }
+      lines.push('');
+    }
+  }
+
+  if (plan.affectedEntities.length > 0) {
+    lines.push('## Affected Entities');
+    lines.push('');
+    for (const item of plan.affectedEntities) {
+      lines.push(`- **${item.name}** (${item.impact}): ${item.description}`);
+    }
+    lines.push('');
+  }
+
+  if (plan.affectedModules.length > 0) {
+    lines.push('## Affected Modules');
+    lines.push('');
+    for (const item of plan.affectedModules) {
+      lines.push(`- **${item.name}** (${item.impact}): ${item.description}`);
+    }
+    lines.push('');
+  }
+
+  if (plan.affectedPolicies.length > 0) {
+    lines.push('## Affected Policies');
+    lines.push('');
+    for (const item of plan.affectedPolicies) {
+      lines.push(`- **${item.name}** (${item.impact}): ${item.description}`);
+    }
+    lines.push('');
+  }
+
+  if (plan.affectedInvariants.length > 0) {
+    lines.push('## Affected Invariants');
+    lines.push('');
+    for (const item of plan.affectedInvariants) {
+      lines.push(`- **${item.name}** (${item.impact}): ${item.description}`);
+    }
+    lines.push('');
+  }
+
+  if (plan.affectedRoutes.length > 0) {
+    lines.push('## Affected Routes');
+    lines.push('');
+    for (const item of plan.affectedRoutes) {
+      lines.push(`- **${item.name}** (${item.impact}): ${item.description}`);
+    }
+    lines.push('');
+  }
+
+  if (plan.migrationNotes.length > 0) {
+    lines.push('## Migration Notes');
+    lines.push('');
+    lines.push(bulletList(plan.migrationNotes));
+    lines.push('');
+  }
+
+  if (plan.generatedArtifactsToRefresh.length > 0) {
+    lines.push('## Generated Artifacts to Refresh');
+    lines.push('');
+    lines.push(bulletList(plan.generatedArtifactsToRefresh));
+    lines.push('');
+  }
+
+  if (plan.testsLikelyAffected.length > 0) {
+    lines.push('## Tests Likely Affected');
+    lines.push('');
+    lines.push(bulletList(plan.testsLikelyAffected));
+    lines.push('');
+  }
+
+  if (plan.specsToUpdate.length > 0) {
+    lines.push('## Specs to Update');
+    lines.push('');
+    lines.push(bulletList(plan.specsToUpdate));
+    lines.push('');
+  }
+
+  if (plan.humanReviewFlags.length > 0) {
+    lines.push('## Human Review Flags');
+    lines.push('');
+    lines.push(bulletList(plan.humanReviewFlags));
+    lines.push('');
+  }
+
+  if (plan.rolloutNotes.length > 0) {
+    lines.push('## Rollout Notes');
+    lines.push('');
+    lines.push(bulletList(plan.rolloutNotes));
+    lines.push('');
+  }
+
+  if (plan.openQuestions.length > 0) {
+    lines.push('## Open Questions');
+    lines.push('');
+    lines.push(bulletList(plan.openQuestions));
+    lines.push('');
+  }
+
+  return lines.join('\n');
+}
+
+export function renderChangePlanJSON(plan: ChangePlan): string {
+  return JSON.stringify(plan, null, 2);
+}
+
+export function renderChangePlanTerminal(plan: ChangePlan): string {
+  const lines: string[] = [];
+  const SEP = '═'.repeat(60);
+
+  lines.push(SEP);
+  lines.push(`CHANGE PLAN: ${plan.title}`);
+  lines.push(SEP);
+  lines.push('');
+  lines.push(`  ID:      ${plan.id}`);
+  lines.push(`  Status:  ${plan.status}`);
+  lines.push(`  Risk:    ${riskBadge(plan.risk)}`);
+  lines.push(`  Author:  ${plan.author}`);
+  lines.push(`  Created: ${plan.createdAt}`);
+  lines.push('');
+  lines.push(`  Intent:  ${plan.summary.intent}`);
+  lines.push(`  Scope:   ${plan.summary.scope || 'TBD'}`);
+  lines.push(`  Impact:  ${plan.summary.estimatedImpactRadius} affected items`);
+  lines.push(`  Review:  ${plan.summary.requiresHumanReview ? 'REQUIRED' : 'Not required'}`);
+  lines.push(`  Breaking: ${plan.summary.breakingChanges ? 'YES' : 'No'}`);
+  lines.push('');
+
+  if (plan.capabilityChanges.length > 0) {
+    lines.push('CAPABILITY CHANGES');
+    lines.push('─'.repeat(40));
+    for (const c of plan.capabilityChanges) {
+      const breaking = c.breakingChange ? ' [BREAKING]' : '';
+      lines.push(`  ${c.action.toUpperCase()} ${c.capability}${breaking}`);
+      lines.push(`    ${c.description}`);
+    }
+    lines.push('');
+  }
+
+  const sections: Array<[string, { name: string; impact: string; description: string }[]]> = [
+    ['AFFECTED ENTITIES', plan.affectedEntities],
+    ['AFFECTED MODULES', plan.affectedModules],
+    ['AFFECTED POLICIES', plan.affectedPolicies],
+    ['AFFECTED INVARIANTS', plan.affectedInvariants],
+    ['AFFECTED ROUTES', plan.affectedRoutes],
+  ];
+
+  for (const [heading, items] of sections) {
+    if (items.length > 0) {
+      lines.push(heading);
+      lines.push('─'.repeat(40));
+      for (const item of items) {
+        lines.push(`  ${item.name} (${item.impact}): ${item.description}`);
+      }
+      lines.push('');
+    }
+  }
+
+  const listSections: Array<[string, string[]]> = [
+    ['MIGRATION NOTES', plan.migrationNotes],
+    ['GENERATED ARTIFACTS TO REFRESH', plan.generatedArtifactsToRefresh],
+    ['TESTS LIKELY AFFECTED', plan.testsLikelyAffected],
+    ['SPECS TO UPDATE', plan.specsToUpdate],
+    ['HUMAN REVIEW FLAGS', plan.humanReviewFlags],
+    ['ROLLOUT NOTES', plan.rolloutNotes],
+    ['OPEN QUESTIONS', plan.openQuestions],
+  ];
+
+  for (const [heading, items] of listSections) {
+    if (items.length > 0) {
+      lines.push(heading);
+      lines.push('─'.repeat(40));
+      for (const item of items) {
+        lines.push(`  - ${item}`);
+      }
+      lines.push('');
+    }
+  }
+
+  lines.push(SEP);
+
+  return lines.join('\n');
+}

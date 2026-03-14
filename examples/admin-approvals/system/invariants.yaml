@@ -1,0 +1,80 @@
+invariants:
+  - name: requester_cannot_approve_own_request
+    description: >
+      A user who submitted an approval request cannot serve as a reviewer on any
+      step of that same request. This prevents conflicts of interest and ensures
+      independent oversight.
+    entity: approval_request
+    rule: approval_step.reviewer_id must not equal approval_request.requester_id
+    severity: error
+    enforcement: runtime
+
+  - name: approval_steps_must_be_sequential
+    description: >
+      Approval steps within a request must be completed in their defined order.
+      A step cannot be approved or rejected until all preceding steps have been
+      decided. This guarantees the intended review chain is respected.
+    entity: approval_step
+    rule: all preceding steps must have status approved or skipped before current step can be decided
+    severity: error
+    enforcement: runtime
+
+  - name: critical_requests_require_escalation
+    description: >
+      When an approval request is created with critical priority, it must be
+      automatically escalated to an admin or super_admin reviewer. This ensures
+      high-impact actions receive senior oversight.
+    entity: approval_request
+    rule: when priority is critical then status must be escalated
+    severity: warning
+    enforcement: runtime
+
+  - name: audit_log_immutable
+    description: >
+      Audit log entries are append-only. Once created, they cannot be updated,
+      deleted, or modified in any way. This ensures a tamper-proof record of
+      all system activity for compliance and forensic purposes.
+    entity: audit_log
+    rule: update and delete operations are disallowed on audit_log entries
+    severity: error
+    enforcement: compile
+
+  - name: role_change_requires_approval
+    description: >
+      Changing a user's role must go through the approval workflow unless
+      performed by a super_admin. This prevents unauthorized privilege
+      escalation.
+    entity: user
+    rule: role changes require an approved approval_request unless actor is super_admin
+    severity: error
+    enforcement: runtime
+
+  - name: deactivated_users_cannot_act
+    description: >
+      Users whose accounts have been deactivated cannot perform any action in
+      the system. This is enforced at the capability layer before any business
+      logic executes.
+    entity: user
+    rule: actor.is_active must be true for any action
+    severity: error
+    enforcement: runtime
+
+  - name: restricted_data_requires_two_approvals
+    description: >
+      Accessing or exporting restricted-sensitivity resources requires at least
+      two independent approvals. This implements the two-person rule for the
+      most sensitive data in the system.
+    entity: protected_resource
+    rule: when sensitivity is restricted then approval_request must have at least 2 approved steps
+    severity: error
+    enforcement: runtime
+
+  - name: deployment_requires_admin_final_approval
+    description: >
+      Deployment requests must have an admin or super_admin as the final
+      approval step. Reviewer approvals alone are not sufficient. This ensures
+      that someone with production authority signs off.
+    entity: approval_request
+    rule: when type is deployment then final approval_step reviewer must have role admin or super_admin
+    severity: error
+    enforcement: runtime

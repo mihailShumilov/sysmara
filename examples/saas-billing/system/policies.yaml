@@ -1,0 +1,95 @@
+policies:
+  - name: admin_full_access
+    description: System administrators have unrestricted access to all capabilities
+    actor: admin
+    effect: allow
+    conditions:
+      - field: caller.role
+        operator: eq
+        value: admin
+    capabilities:
+      - create_user
+      - get_user
+      - create_workspace
+      - get_workspace
+      - transfer_workspace_owner
+      - list_workspace_members
+      - add_workspace_member
+      - create_subscription
+      - cancel_subscription
+      - upgrade_subscription
+      - downgrade_subscription
+      - generate_invoice
+      - void_invoice
+      - get_invoice
+
+  - name: workspace_owner_manage
+    description: Workspace owners can manage their own workspaces and related billing
+    actor: workspace_owner
+    effect: allow
+    conditions:
+      - field: caller.id
+        operator: is_owner
+        value: resource.workspace.owner_id
+    capabilities:
+      - transfer_workspace_owner
+      - add_workspace_member
+      - create_subscription
+      - cancel_subscription
+      - upgrade_subscription
+      - downgrade_subscription
+      - get_invoice
+
+  - name: billing_admin_manage_subscriptions
+    description: Billing administrators can manage subscriptions and invoices across all workspaces
+    actor: billing_admin
+    effect: allow
+    conditions:
+      - field: caller.role
+        operator: eq
+        value: billing_admin
+    capabilities:
+      - create_subscription
+      - cancel_subscription
+      - upgrade_subscription
+      - downgrade_subscription
+      - generate_invoice
+      - void_invoice
+      - get_invoice
+
+  - name: member_read_only
+    description: Regular members can only read data within their workspace
+    actor: member
+    effect: allow
+    conditions:
+      - field: caller.role
+        operator: in
+        value:
+          - member
+          - billing_admin
+      - field: action
+        operator: in
+        value:
+          - get_user
+          - get_workspace
+          - get_invoice
+          - list_workspace_members
+    capabilities:
+      - get_user
+      - get_workspace
+      - get_invoice
+      - list_workspace_members
+
+  - name: owner_can_transfer_workspace
+    description: Only the current workspace owner can transfer ownership to another user
+    actor: workspace_owner
+    effect: allow
+    conditions:
+      - field: caller.id
+        operator: is_owner
+        value: resource.workspace.owner_id
+      - field: action
+        operator: eq
+        value: transfer_workspace_owner
+    capabilities:
+      - transfer_workspace_owner

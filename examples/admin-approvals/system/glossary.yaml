@@ -1,0 +1,90 @@
+glossary:
+  - term: approval request
+    definition: >
+      A formal submission by a user asking for authorization to perform a
+      privileged action such as a role change, data export, system configuration
+      change, or deployment. Each request has a type, priority, status, and one
+      or more approval steps.
+
+  - term: approval step
+    definition: >
+      A single review checkpoint within an approval request. Steps are ordered
+      sequentially and must be completed in sequence. Each step is assigned to
+      a specific reviewer who can approve, reject, or skip it.
+
+  - term: reviewer
+    definition: >
+      A user with the reviewer (or higher) role who is assigned to evaluate and
+      decide on one or more approval steps. Reviewers cannot review their own
+      requests.
+
+  - term: escalation
+    definition: >
+      The process of elevating an approval request to a higher-authority
+      reviewer — typically an admin or super_admin. Escalation can be triggered
+      manually by a reviewer or automatically when a request has critical
+      priority.
+
+  - term: audit log
+    definition: >
+      An immutable, append-only record of every significant action performed in
+      the system. Each entry captures the actor, action, affected resource,
+      contextual details, and IP address. Audit logs cannot be modified or
+      deleted after creation.
+
+  - term: protected resource
+    definition: >
+      A system asset that requires authorization and potentially approval before
+      it can be accessed or modified. Resources include system configurations,
+      user data, financial data, and deployment targets.
+
+  - term: sensitivity level
+    definition: >
+      A classification assigned to a protected resource that determines the
+      access controls required. Levels are public (open), internal (authenticated
+      users), confidential (requires approval), and restricted (requires two
+      independent approvals).
+
+  - term: self-service blocking
+    definition: >
+      A policy that prevents a user from approving or rejecting their own
+      approval request. This ensures independent oversight and prevents
+      conflicts of interest.
+
+  - term: two-person rule
+    definition: >
+      A control requiring at least two independent reviewers to approve a request
+      before it can proceed. Applied to restricted data exports and deployments
+      to reduce the risk of unauthorized access or changes.
+
+  - term: policy layering
+    definition: >
+      The system of combining multiple policies with different priorities to
+      determine whether an action is allowed. Higher-priority policies override
+      lower ones. Deny policies take precedence when priorities are equal.
+
+  - term: role
+    definition: >
+      A named permission level assigned to a user. The system defines four
+      roles in ascending privilege: member (can only create requests), reviewer
+      (can approve/reject), admin (can manage users and view audit logs),
+      and super_admin (unrestricted access).
+
+  - term: safe edit zone
+    definition: >
+      A classification of code directories that controls what AI agents and
+      developers can modify. Zones include generated (compiler output),
+      editable (open for changes), human-review-only (requires specific team
+      review), and protected (must not be modified).
+
+  - term: sequential approval
+    definition: >
+      The enforcement rule requiring approval steps to be completed in their
+      defined order. A step at position N cannot be decided until all steps
+      at positions 1 through N-1 have been decided.
+
+  - term: deployment gate
+    definition: >
+      A control requiring that deployment requests have at least two reviewer
+      approvals and an admin or super_admin as the final approver before
+      the deployment can be triggered.

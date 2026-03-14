@@ -1,0 +1,110 @@
+flows:
+  - name: approval_workflow
+    description: >
+      Standard approval workflow triggered when a new request is created.
+      Determines the required reviewers based on request type and priority,
+      creates the approval steps, and notifies the assigned reviewers.
+    trigger: create_approval_request
+    module: approvals
+    steps:
+      - name: create_request
+        action: persist_approval_request
+        onFailure: abort
+
+      - name: determine_reviewers
+        action: compute_reviewers
+        onFailure: abort
+
+      - name: create_steps
+        action: persist_approval_steps
+        onFailure: abort
+
+      - name: check_auto_escalation
+        action: evaluate_auto_escalation
+        onFailure: skip
+        condition: request.priority == critical
+
+      - name: notify_reviewers
+        action: notify_assigned_reviewers
+        onFailure: skip
+
+  - name: multi_step_approval
+    description: >
+      Handles the progression of multi-step approvals. When a step is approved,
+      checks if more steps remain. If all steps are complete, finalizes the
+      request. Otherwise, activates the next step.
+    trigger: approve_step
+    module: approvals
+    steps:
+      - name: record_approval
+        action: update_approval_step
+        onFailure: abort
+
+      - name: log_approval
+        action: create_audit_log_entry
+        onFailure: skip
+
+      - name: check_remaining_steps
+        action: evaluate_remaining_steps
+        onFailure: abort
+
+      - name: finalize_or_continue
+        action: finalize_or_activate_next
+        onFailure: abort
+
+  - name: role_change_flow
+    description: >
+      End-to-end flow for changing a user's role. Creates an approval request,
+      waits for the required approvals, then applies the role change and logs
+      the action.
+    trigger: update_user_role
+    module: identity
+    steps:
+      - name: validate_role_change
+        action: evaluate_role_change_validity
+        onFailure: abort
+
+      - name: create_role_change_request
+        action: create_approval_request
+        onFailure: abort
+
+      - name: await_approval
+        action: wait_for_approval
+        onFailure: abort
+
+      - name: apply_role_change
+        action: update_user_role
+        onFailure: abort
+        condition: approval_request.status == approved
+
+      - name: log_role_change
+        action: create_audit_log_entry
+        onFailure: skip
+
+  - name: data_export_flow
+    description: >
+      Controlled export of protected data. Verifies that the required approvals
+      exist, performs the export, logs the action, and notifies the requester
+      with the download link.
+    trigger: export_protected_data
+    module: resources
+    steps:
+      - name: verify_approval
+        action: evaluate_approval_status
+        onFailure: abort
+
+      - name: check_sensitivity_requirements
+        action: evaluate_sensitivity_rules
+        onFailure: abort
+
+      - name: export_data
+        action: execute_data_export
+        onFailure: abort
+
+      - name: log_export
+        action: create_audit_log_entry
+        onFailure: skip
+
+      - name: notify_requester
+        action: notify_export_ready
+        onFailure: skip

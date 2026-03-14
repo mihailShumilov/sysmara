@@ -1,0 +1,73 @@
+invariants:
+  - name: slug_must_be_unique
+    description: Article slugs must be unique across all articles to ensure clean URLs
+    entity: article
+    rule: slug must be unique across all articles
+    severity: error
+    enforcement: runtime
+
+  - name: published_article_must_have_reviewer
+    description: Articles cannot transition to published status without an assigned reviewer
+    entity: article
+    rule: reviewer_id must not be null when status is published
+    severity: error
+    enforcement: runtime
+
+  - name: article_state_transitions_only_forward
+    description: >
+      Articles follow a strict lifecycle: draft -> in_review -> approved -> published -> archived.
+      Status can only move forward through the defined stages, with the single exception that
+      rejection returns an article from in_review back to draft.
+    entity: article
+    rule: "status transitions must follow: draft->in_review->approved->published->archived, with in_review->draft allowed for rejection"
+    severity: error
+    enforcement: runtime
+
+  - name: draft_cannot_be_published_directly
+    description: Articles must go through the review process before they can be published
+    entity: article
+    rule: status cannot transition directly from draft to published
+    severity: error
+    enforcement: runtime
+
+  - name: archived_articles_immutable
+    description: Once an article is archived, its content cannot be modified
+    entity: article
+    rule: articles with status archived cannot be updated or deleted
+    severity: error
+    enforcement: runtime
+
+  - name: comment_must_reference_published_article
+    description: Comments can only be added to articles that have been published
+    entity: comment
+    rule: article_id must reference an article with status published
+    severity: error
+    enforcement: runtime
+
+  - name: category_slug_must_be_unique
+    description: Category slugs must be unique to ensure clean URL paths
+    entity: category
+    rule: slug must be unique across all categories
+    severity: error
+    enforcement: runtime
+
+  - name: category_cannot_be_own_parent
+    description: A category cannot reference itself as its own parent in the hierarchy
+    entity: category
+    rule: parent_id must not equal self.id
+    severity: error
+    enforcement: runtime
+
+  - name: author_must_have_user
+    description: Every author profile must reference a valid user account
+    entity: author
+    rule: user_id must reference a valid user.id
+    severity: error
+    enforcement: runtime
+
+  - name: media_size_limit
+    description: Uploaded media assets cannot exceed 50MB to prevent storage abuse
+    entity: media_asset
+    rule: size_bytes must be less than or equal to 52428800
+    severity: error
+    enforcement: runtime

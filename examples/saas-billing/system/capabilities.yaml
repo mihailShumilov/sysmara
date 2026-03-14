@@ -1,0 +1,348 @@
+capabilities:
+  - name: create_user
+    description: Register a new user account in the system
+    module: users
+    entities:
+      - user
+    input:
+      - name: email
+        type: string
+        required: true
+        description: User email address
+      - name: name
+        type: string
+        required: true
+        description: Display name
+      - name: role
+        type: string
+        required: false
+        description: System role — defaults to member
+    output:
+      - name: user
+        type: user
+        required: true
+        description: The created user entity
+    policies:
+      - admin_full_access
+    invariants:
+      - email_must_be_unique
+
+  - name: get_user
+    description: Retrieve a user by ID
+    module: users
+    entities:
+      - user
+    input:
+      - name: user_id
+        type: string
+        required: true
+        description: ID of the user to retrieve
+    output:
+      - name: user
+        type: user
+        required: true
+        description: The retrieved user entity
+    policies:
+      - admin_full_access
+      - member_read_only
+    invariants: []
+
+  - name: create_workspace
+    description: Create a new workspace owned by the requesting user
+    module: workspaces
+    entities:
+      - workspace
+    input:
+      - name: name
+        type: string
+        required: true
+        description: Workspace name
+      - name: owner_id
+        type: string
+        required: true
+        description: User ID of workspace owner
+    output:
+      - name: workspace
+        type: workspace
+        required: true
+        description: The created workspace entity
+    policies:
+      - admin_full_access
+    invariants:
+      - workspace_must_have_owner
+      - workspace_name_not_empty
+
+  - name: get_workspace
+    description: Retrieve a workspace by ID
+    module: workspaces
+    entities:
+      - workspace
+    input:
+      - name: workspace_id
+        type: string
+        required: true
+        description: ID of the workspace to retrieve
+    output:
+      - name: workspace
+        type: workspace
+        required: true
+        description: The retrieved workspace entity
+    policies:
+      - admin_full_access
+      - member_read_only
+    invariants: []
+
+  - name: transfer_workspace_owner
+    description: Transfer ownership of a workspace to another user
+    module: workspaces
+    entities:
+      - workspace
+      - user
+    input:
+      - name: workspace_id
+        type: string
+        required: true
+        description: ID of the workspace to transfer
+      - name: new_owner_id
+        type: string
+        required: true
+        description: User ID of the new owner
+    output:
+      - name: workspace
+        type: workspace
+        required: true
+        description: The updated workspace with new owner
+    policies:
+      - owner_can_transfer_workspace
+      - admin_full_access
+    invariants:
+      - workspace_must_have_owner
+
+  - name: list_workspace_members
+    description: List all members belonging to a workspace
+    module: workspaces
+    entities:
+      - workspace
+      - user
+    input:
+      - name: workspace_id
+        type: string
+        required: true
+        description: ID of the workspace
+    output:
+      - name: members
+        type: array
+        required: true
+        description: List of user entities who are members
+    policies:
+      - admin_full_access
+      - member_read_only
+      - workspace_owner_manage
+    invariants: []
+
+  - name: add_workspace_member
+    description: Add a user as a member to a workspace
+    module: workspaces
+    entities:
+      - workspace
+      - user
+    input:
+      - name: workspace_id
+        type: string
+        required: true
+        description: ID of the workspace
+      - name: user_id
+        type: string
+        required: true
+        description: User ID to add as member
+      - name: role
+        type: string
+        required: false
+        description: Role within the workspace — defaults to member
+    output:
+      - name: workspace
+        type: workspace
+        required: true
+        description: Updated workspace with new member
+    policies:
+      - admin_full_access
+      - workspace_owner_manage
+    invariants:
+      - workspace_must_have_owner
+
+  - name: create_subscription
+    description: Create a new billing subscription for a workspace
+    module: billing
+    entities:
+      - subscription
+      - workspace
+    input:
+      - name: workspace_id
+        type: string
+        required: true
+        description: Workspace to attach the subscription to
+      - name: plan
+        type: string
+        required: true
+        description: Subscription plan (free, pro, enterprise)
+      - name: billing_cycle
+        type: string
+        required: true
+        description: Billing cycle (monthly, yearly)
+    output:
+      - name: subscription
+        type: subscription
+        required: true
+        description: The created subscription entity
+    policies:
+      - admin_full_access
+      - workspace_owner_manage
+      - billing_admin_manage_subscriptions
+    invariants:
+      - subscription_must_have_workspace
+      - no_duplicate_active_subscription
+
+  - name: cancel_subscription
+    description: Cancel an active subscription for a workspace
+    module: billing
+    entities:
+      - subscription
+    input:
+      - name: subscription_id
+        type: string
+        required: true
+        description: ID of the subscription to cancel
+    output:
+      - name: subscription
+        type: subscription
+        required: true
+        description: The cancelled subscription entity
+    policies:
+      - admin_full_access
+      - workspace_owner_manage
+      - billing_admin_manage_subscriptions
+    invariants:
+      - subscription_must_have_workspace
+
+  - name: upgrade_subscription
+    description: Upgrade a subscription to a higher-tier plan
+    module: billing
+    entities:
+      - subscription
+      - workspace
+    input:
+      - name: subscription_id
+        type: string
+        required: true
+        description: ID of the subscription to upgrade
+      - name: new_plan
+        type: string
+        required: true
+        description: Target plan to upgrade to (pro, enterprise)
+    output:
+      - name: subscription
+        type: subscription
+        required: true
+        description: The upgraded subscription entity
+    policies:
+      - admin_full_access
+      - workspace_owner_manage
+      - billing_admin_manage_subscriptions
+    invariants:
+      - subscription_must_have_workspace
+      - no_duplicate_active_subscription
+
+  - name: downgrade_subscription
+    description: Downgrade a subscription to a lower-tier plan
+    module: billing
+    entities:
+      - subscription
+      - workspace
+      - invoice
+    input:
+      - name: subscription_id
+        type: string
+        required: true
+        description: ID of the subscription to downgrade
+      - name: new_plan
+        type: string
+        required: true
+        description: Target plan to downgrade to (free, pro)
+    output:
+      - name: subscription
+        type: subscription
+        required: true
+        description: The downgraded subscription entity
+    policies:
+      - admin_full_access
+      - workspace_owner_manage
+      - billing_admin_manage_subscriptions
+    invariants:
+      - subscription_must_have_workspace
+      - cannot_downgrade_with_unpaid_invoices
+
+  - name: generate_invoice
+    description: Generate a billing invoice for a subscription period
+    module: billing
+    entities:
+      - invoice
+      - subscription
+    input:
+      - name: subscription_id
+        type: string
+        required: true
+        description: ID of the subscription to invoice
+    output:
+      - name: invoice
+        type: invoice
+        required: true
+        description: The generated invoice entity
+    policies:
+      - admin_full_access
+      - billing_admin_manage_subscriptions
+    invariants:
+      - invoice_amount_must_be_positive
+      - invoice_must_have_subscription
+
+  - name: void_invoice
+    description: Void an existing invoice, marking it as cancelled
+    module: billing
+    entities:
+      - invoice
+    input:
+      - name: invoice_id
+        type: string
+        required: true
+        description: ID of the invoice to void
+    output:
+      - name: invoice
+        type: invoice
+        required: true
+        description: The voided invoice entity
+    policies:
+      - admin_full_access
+      - billing_admin_manage_subscriptions
+    invariants:
+      - invoice_must_have_subscription
+
+  - name: get_invoice
+    description: Retrieve an invoice by ID
+    module: billing
+    entities:
+      - invoice
+    input:
+      - name: invoice_id
+        type: string
+        required: true
+        description: ID of the invoice to retrieve
+    output:
+      - name: invoice
+        type: invoice
+        required: true
+        description: The retrieved invoice entity
+    policies:
+      - admin_full_access
+      - billing_admin_manage_subscriptions
+      - workspace_owner_manage
+      - member_read_only
+    invariants: []

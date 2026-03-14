@@ -1,0 +1,9 @@
+name: saas-billing
+version: 0.1.0
+specDir: ./system
+appDir: ./app
+frameworkDir: ./.framework
+generatedDir: ./app/generated
+port: 3000
+host: 0.0.0.0
+logLevel: info

@@ -1,0 +1,389 @@
+capabilities:
+  # ── Identity Module ────────────────────────────────────────────────────
+  - name: create_user
+    module: identity
+    description: Register a new user in the system with a default member role
+    entities: [user]
+    input:
+      - name: email
+        type: string
+        required: true
+      - name: name
+        type: string
+        required: true
+      - name: department
+        type: string
+        required: true
+      - name: role
+        type: enum
+        required: false
+    output:
+      - name: user
+        type: user
+        required: true
+    policies:
+      - super_admin_full_access
+      - admin_manage_users
+    invariants:
+      - deactivated_users_cannot_act
+    sideEffects:
+      - audit_log_entry
+
+  - name: update_user_role
+    module: identity
+    description: Change a user's role — triggers approval workflow unless performed by super_admin
+    entities: [user, approval_request]
+    input:
+      - name: user_id
+        type: uuid
+        required: true
+      - name: new_role
+        type: enum
+        required: true
+      - name: justification
+        type: string
+        required: true
+    output:
+      - name: approval_request
+        type: approval_request
+        required: true
+    policies:
+      - super_admin_full_access
+      - admin_manage_users
+    invariants:
+      - role_change_requires_approval
+      - deactivated_users_cannot_act
+    sideEffects:
+      - audit_log_entry
+
+  - name: deactivate_user
+    module: identity
+    description: Deactivate a user account, preventing all further actions
+    entities: [user]
+    input:
+      - name: user_id
+        type: uuid
+        required: true
+      - name: reason
+        type: string
+        required: true
+    output:
+      - name: user
+        type: user
+        required: true
+    policies:
+      - super_admin_full_access
+      - admin_manage_users
+    invariants:
+      - deactivated_users_cannot_act
+    sideEffects:
+      - audit_log_entry
+
+  # ── Approvals Module ───────────────────────────────────────────────────
+  - name: create_approval_request
+    module: approvals
+    description: Submit a new approval request that will be routed through the appropriate workflow
+    entities: [approval_request, approval_step]
+    input:
+      - name: type
+        type: enum
+        required: true
+      - name: title
+        type: string
+        required: true
+      - name: description
+        type: string
+        required: true
+      - name: priority
+        type: enum
+        required: false
+      - name: metadata
+        type: json
+        required: false
+    output:
+      - name: approval_request
+        type: approval_request
+        required: true
+    policies:
+      - super_admin_full_access
+      - admin_manage_users
+      - reviewer_approve_requests
+      - member_request_only
+    invariants:
+      - deactivated_users_cannot_act
+      - critical_requests_require_escalation
+    sideEffects:
+      - audit_log_entry
+
+  - name: get_approval_request
+    module: approvals
+    description: Retrieve a single approval request with its steps and current status
+    entities: [approval_request, approval_step]
+    input:
+      - name: request_id
+        type: uuid
+        required: true
+    output:
+      - name: approval_request
+        type: approval_request
+        required: true
+    policies:
+      - super_admin_full_access
+      - admin_manage_users
+      - reviewer_approve_requests
+      - member_request_only
+    invariants: []
+
+  - name: list_approval_requests
+    module: approvals
+    description: List approval requests with filtering by status, type, and assignment
+    entities: [approval_request]
+    input:
+      - name: status
+        type: enum
+        required: false
+      - name: type
+        type: enum
+        required: false
+      - name: assigned_to_me
+        type: boolean
+        required: false
+      - name: page
+        type: integer
+        required: false
+      - name: per_page
+        type: integer
+        required: false
+    output:
+      - name: items
+        type: list
+        required: true
+    policies:
+      - super_admin_full_access
+      - admin_manage_users
+      - reviewer_approve_requests
+      - member_request_only
+    invariants: []
+
+  - name: approve_step
+    module: approvals
+    description: Approve the current pending step in an approval workflow
+    entities: [approval_step, approval_request]
+    input:
+      - name: step_id
+        type: uuid
+        required: true
+      - name: comment
+        type: string
+        required: false
+    output:
+      - name: approval_step
+        type: approval_step
+        required: true
+    policies:
+      - super_admin_full_access
+      - reviewer_approve_requests
+      - self_service_blocked
+    invariants:
+      - requester_cannot_approve_own_request
+      - approval_steps_must_be_sequential
+      - deactivated_users_cannot_act
+    sideEffects:
+      - audit_log_entry
+
+  - name: reject_step
+    module: approvals
+    description: Reject the current pending step, which rejects the entire request
+    entities: [approval_step, approval_request]
+    input:
+      - name: step_id
+        type: uuid
+        required: true
+      - name: comment
+        type: string
+        required: true
+    output:
+      - name: approval_step
+        type: approval_step
+        required: true
+    policies:
+      - super_admin_full_access
+      - reviewer_approve_requests
+      - self_service_blocked
+    invariants:
+      - requester_cannot_approve_own_request
+      - approval_steps_must_be_sequential
+      - deactivated_users_cannot_act
+    sideEffects:
+      - audit_log_entry
+
+  - name: escalate_request
+    module: approvals
+    description: Escalate a request to a higher authority when current reviewer cannot decide
+    entities: [approval_request, approval_step]
+    input:
+      - name: request_id
+        type: uuid
+        required: true
+      - name: reason
+        type: string
+        required: true
+    output:
+      - name: approval_request
+        type: approval_request
+        required: true
+    policies:
+      - super_admin_full_access
+      - reviewer_approve_requests
+      - admin_manage_users
+    invariants:
+      - deactivated_users_cannot_act
+    sideEffects:
+      - audit_log_entry
+
+  # ── Audit Module ───────────────────────────────────────────────────────
+  - name: get_audit_log
+    module: audit
+    description: Retrieve a single audit log entry by ID
+    entities: [audit_log]
+    input:
+      - name: log_id
+        type: uuid
+        required: true
+    output:
+      - name: audit_log
+        type: audit_log
+        required: true
+    policies:
+      - super_admin_full_access
+      - audit_log_read_admin_only
+    invariants: []
+
+  - name: list_audit_logs
+    module: audit
+    description: Search and filter audit log entries with pagination
+    entities: [audit_log]
+    input:
+      - name: actor_id
+        type: uuid
+        required: false
+      - name: action
+        type: string
+        required: false
+      - name: resource_type
+        type: string
+        required: false
+      - name: resource_id
+        type: uuid
+        required: false
+      - name: from_date
+        type: datetime
+        required: false
+      - name: to_date
+        type: datetime
+        required: false
+      - name: page
+        type: integer
+        required: false
+      - name: per_page
+        type: integer
+        required: false
+    output:
+      - name: items
+        type: list
+        required: true
+    policies:
+      - super_admin_full_access
+      - audit_log_read_admin_only
+    invariants: []
+
+  # ── Resources Module ───────────────────────────────────────────────────
+  - name: export_protected_data
+    module: resources
+    description: Export data from a protected resource — requires prior approval for confidential/restricted
+    entities: [protected_resource, approval_request]
+    input:
+      - name: resource_id
+        type: uuid
+        required: true
+      - name: format
+        type: enum
+        required: false
+      - name: approval_request_id
+        type: uuid
+        required: false
+        description: Required for confidential and restricted resources
+    output:
+      - name: download_url
+        type: string
+        required: true
+      - name: expires_at
+        type: datetime
+        required: true
+    policies:
+      - super_admin_full_access
+      - restricted_data_requires_approval
+    invariants:
+      - restricted_data_requires_two_approvals
+      - deactivated_users_cannot_act
+    sideEffects:
+      - audit_log_entry
+
+  - name: modify_system_config
+    module: resources
+    description: Modify a system configuration resource — requires approval
+    entities: [protected_resource, approval_request]
+    input:
+      - name: resource_id
+        type: uuid
+        required: true
+      - name: changes
+        type: json
+        required: true
+      - name: approval_request_id
+        type: uuid
+        required: true
+    output:
+      - name: protected_resource
+        type: protected_resource
+        required: true
+    policies:
+      - super_admin_full_access
+      - restricted_data_requires_approval
+    invariants:
+      - deactivated_users_cannot_act
+    sideEffects:
+      - audit_log_entry
+
+  - name: trigger_deployment
+    module: resources
+    description: Trigger a deployment — requires two reviewer approvals plus admin final sign-off
+    entities: [protected_resource, approval_request]
+    input:
+      - name: resource_id
+        type: uuid
+        required: true
+      - name: environment
+        type: enum
+        required: true
+      - name: version
+        type: string
+        required: true
+      - name: approval_request_id
+        type: uuid
+        required: true
+    output:
+      - name: deployment_id
+        type: uuid
+        required: true
+      - name: status
+        type: string
+        required: true
+    policies:
+      - super_admin_full_access
+      - deployment_requires_two_approvals
+    invariants:
+      - deployment_requires_admin_final_approval
+      - deactivated_users_cannot_act
+    sideEffects:
+      - audit_log_entry

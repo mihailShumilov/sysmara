@@ -1,0 +1,19 @@
+safeEditZones:
+  - path: app/generated/**
+    zone: generated
+    description: Compiler-generated code
+  - path: app/capabilities/**
+    zone: editable
+    description: Capability implementations
+  - path: app/protected/audit/**
+    zone: human-review-only
+    owner: security-team
+    description: Audit infrastructure — requires security team review
+  - path: app/protected/auth/**
+    zone: protected
+    owner: security-team
+    description: Authentication infrastructure — do not modify
+  - path: system/**
+    zone: editable
+    owner: architect
+    description: System specifications

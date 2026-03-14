@@ -1,0 +1,452 @@
+capabilities:
+  - name: create_article
+    description: Create a new article in draft status
+    module: content
+    entities:
+      - article
+    input:
+      - name: title
+        type: string
+        required: true
+        description: Article title
+      - name: slug
+        type: string
+        required: true
+        description: URL-friendly slug for the article
+      - name: body
+        type: text
+        required: true
+        description: Article body content in markdown
+      - name: author_id
+        type: string
+        required: true
+        description: ID of the author creating this article
+      - name: category_id
+        type: string
+        required: false
+        description: Category to assign the article to
+    output:
+      - name: article
+        type: article
+        required: true
+        description: The newly created article in draft status
+    policies:
+      - writer_create_own
+      - admin_full_access
+    invariants:
+      - slug_must_be_unique
+
+  - name: get_article
+    description: Retrieve an article by ID
+    module: content
+    entities:
+      - article
+    input:
+      - name: article_id
+        type: string
+        required: true
+        description: ID of the article to retrieve
+    output:
+      - name: article
+        type: article
+        required: true
+        description: The retrieved article entity
+    policies:
+      - public_read_published
+      - writer_create_own
+      - editor_review
+      - admin_full_access
+    invariants: []
+
+  - name: update_article
+    description: Update an article's title, body, slug, or category
+    module: content
+    entities:
+      - article
+    input:
+      - name: article_id
+        type: string
+        required: true
+        description: ID of the article to update
+      - name: title
+        type: string
+        required: false
+        description: Updated article title
+      - name: slug
+        type: string
+        required: false
+        description: Updated URL-friendly slug
+      - name: body
+        type: text
+        required: false
+        description: Updated article body content
+      - name: category_id
+        type: string
+        required: false
+        description: Updated category assignment
+    output:
+      - name: article
+        type: article
+        required: true
+        description: The updated article entity
+    policies:
+      - writer_create_own
+      - author_manage_own_drafts
+      - admin_full_access
+    invariants:
+      - slug_must_be_unique
+      - archived_articles_immutable
+
+  - name: delete_article
+    description: Permanently delete an article and its associated media
+    module: content
+    entities:
+      - article
+      - media_asset
+    input:
+      - name: article_id
+        type: string
+        required: true
+        description: ID of the article to delete
+    output:
+      - name: deleted
+        type: boolean
+        required: true
+        description: Whether the deletion was successful
+    policies:
+      - admin_full_access
+    invariants:
+      - archived_articles_immutable
+
+  - name: list_articles
+    description: List articles with optional filters for status, author, and category
+    module: content
+    entities:
+      - article
+    input:
+      - name: status
+        type: string
+        required: false
+        description: Filter by lifecycle status
+      - name: author_id
+        type: string
+        required: false
+        description: Filter by author
+      - name: category_id
+        type: string
+        required: false
+        description: Filter by category
+      - name: page
+        type: number
+        required: false
+        description: Page number for pagination
+      - name: per_page
+        type: number
+        required: false
+        description: Number of results per page
+    output:
+      - name: articles
+        type: array
+        required: true
+        description: List of matching articles
+      - name: total
+        type: number
+        required: true
+        description: Total count of matching articles
+    policies:
+      - public_read_published
+      - writer_create_own
+      - editor_review
+      - admin_full_access
+    invariants: []
+
+  - name: submit_for_review
+    description: Submit a draft article for editorial review, transitioning its status from draft to in_review
+    module: content
+    entities:
+      - article
+    input:
+      - name: article_id
+        type: string
+        required: true
+        description: ID of the article to submit
+    output:
+      - name: article
+        type: article
+        required: true
+        description: The article with status changed to in_review
+    policies:
+      - writer_create_own
+      - admin_full_access
+    invariants:
+      - article_state_transitions_only_forward
+      - draft_cannot_be_published_directly
+
+  - name: approve_article
+    description: Approve an article that is in review, transitioning its status from in_review to approved
+    module: content
+    entities:
+      - article
+    input:
+      - name: article_id
+        type: string
+        required: true
+        description: ID of the article to approve
+      - name: reviewer_id
+        type: string
+        required: true
+        description: ID of the editor approving this article
+    output:
+      - name: article
+        type: article
+        required: true
+        description: The article with status changed to approved
+    policies:
+      - editor_review
+      - admin_full_access
+    invariants:
+      - article_state_transitions_only_forward
+
+  - name: reject_article
+    description: Reject an article that is in review, returning its status to draft for revisions
+    module: content
+    entities:
+      - article
+    input:
+      - name: article_id
+        type: string
+        required: true
+        description: ID of the article to reject
+      - name: reviewer_id
+        type: string
+        required: true
+        description: ID of the editor rejecting this article
+      - name: reason
+        type: text
+        required: true
+        description: Explanation of why the article was rejected
+    output:
+      - name: article
+        type: article
+        required: true
+        description: The article with status returned to draft
+    policies:
+      - editor_review
+      - admin_full_access
+    invariants: []
+
+  - name: publish_article
+    description: Publish an approved article, making it publicly visible
+    module: content
+    entities:
+      - article
+    input:
+      - name: article_id
+        type: string
+        required: true
+        description: ID of the article to publish
+    output:
+      - name: article
+        type: article
+        required: true
+        description: The article with status changed to published and published_at set
+    policies:
+      - chief_editor_publish
+      - admin_full_access
+      - writer_cannot_publish_own
+    invariants:
+      - article_state_transitions_only_forward
+      - published_article_must_have_reviewer
+
+  - name: archive_article
+    description: Archive a published article, removing it from public visibility
+    module: content
+    entities:
+      - article
+    input:
+      - name: article_id
+        type: string
+        required: true
+        description: ID of the article to archive
+    output:
+      - name: article
+        type: article
+        required: true
+        description: The article with status changed to archived
+    policies:
+      - chief_editor_publish
+      - admin_full_access
+    invariants:
+      - article_state_transitions_only_forward
+
+  - name: create_category
+    description: Create a new content category
+    module: categories
+    entities:
+      - category
+    input:
+      - name: name
+        type: string
+        required: true
+        description: Category display name
+      - name: slug
+        type: string
+        required: true
+        description: URL-friendly category slug
+      - name: description
+        type: text
+        required: false
+        description: Category description
+      - name: parent_id
+        type: string
+        required: false
+        description: Parent category ID for hierarchical structure
+    output:
+      - name: category
+        type: category
+        required: true
+        description: The created category entity
+    policies:
+      - editor_review
+      - admin_full_access
+    invariants:
+      - category_slug_must_be_unique
+      - category_cannot_be_own_parent
+
+  - name: update_category
+    description: Update an existing category's name, description, or hierarchy
+    module: categories
+    entities:
+      - category
+    input:
+      - name: category_id
+        type: string
+        required: true
+        description: ID of the category to update
+      - name: name
+        type: string
+        required: false
+        description: Updated category name
+      - name: slug
+        type: string
+        required: false
+        description: Updated category slug
+      - name: description
+        type: text
+        required: false
+        description: Updated category description
+      - name: parent_id
+        type: string
+        required: false
+        description: Updated parent category ID
+      - name: active
+        type: boolean
+        required: false
+        description: Whether the category is active
+    output:
+      - name: category
+        type: category
+        required: true
+        description: The updated category entity
+    policies:
+      - editor_review
+      - admin_full_access
+    invariants:
+      - category_slug_must_be_unique
+      - category_cannot_be_own_parent
+
+  - name: create_comment
+    description: Submit a new comment on a published article
+    module: engagement
+    entities:
+      - comment
+      - article
+    input:
+      - name: article_id
+        type: string
+        required: true
+        description: ID of the article to comment on
+      - name: author_id
+        type: string
+        required: true
+        description: ID of the comment author
+      - name: body
+        type: text
+        required: true
+        description: Comment body text
+    output:
+      - name: comment
+        type: comment
+        required: true
+        description: The created comment in pending moderation status
+    policies:
+      - writer_create_own
+      - editor_review
+      - admin_full_access
+    invariants:
+      - comment_must_reference_published_article
+
+  - name: moderate_comment
+    description: Approve, reject, or mark a comment as spam
+    module: engagement
+    entities:
+      - comment
+    input:
+      - name: comment_id
+        type: string
+        required: true
+        description: ID of the comment to moderate
+      - name: status
+        type: string
+        required: true
+        description: New moderation status (approved, rejected, spam)
+      - name: moderator_id
+        type: string
+        required: true
+        description: ID of the editor performing moderation
+    output:
+      - name: comment
+        type: comment
+        required: true
+        description: The comment with updated moderation status
+    policies:
+      - editor_moderate_comments
+      - admin_full_access
+    invariants: []
+
+  - name: upload_media
+    description: Upload a media asset and optionally attach it to an article
+    module: content
+    entities:
+      - media_asset
+    input:
+      - name: filename
+        type: string
+        required: true
+        description: Original filename
+      - name: mime_type
+        type: string
+        required: true
+        description: MIME type of the file
+      - name: size_bytes
+        type: number
+        required: true
+        description: File size in bytes
+      - name: uploaded_by
+        type: string
+        required: true
+        description: ID of the author uploading the file
+      - name: article_id
+        type: string
+        required: false
+        description: ID of the article to attach the media to
+    output:
+      - name: media_asset
+        type: media_asset
+        required: true
+        description: The created media asset with storage URL
+    policies:
+      - writer_create_own
+      - admin_full_access
+    invariants:
+      - media_size_limit

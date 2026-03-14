@@ -1,0 +1,45 @@
+modules:
+  - name: users
+    description: User registration, authentication, and profile management
+    entities:
+      - user
+    capabilities:
+      - create_user
+      - get_user
+    allowedDependencies: []
+    forbiddenDependencies: []
+    owner: platform-team
+
+  - name: workspaces
+    description: Workspace lifecycle, membership, and ownership management
+    entities:
+      - workspace
+    capabilities:
+      - create_workspace
+      - get_workspace
+      - transfer_workspace_owner
+      - list_workspace_members
+      - add_workspace_member
+    allowedDependencies:
+      - users
+    forbiddenDependencies: []
+    owner: platform-team
+
+  - name: billing
+    description: Subscription management, invoice generation, and payment processing
+    entities:
+      - subscription
+      - invoice
+    capabilities:
+      - create_subscription
+      - cancel_subscription
+      - upgrade_subscription
+      - downgrade_subscription
+      - generate_invoice
+      - void_invoice
+      - get_invoice
+    allowedDependencies:
+      - users
+      - workspaces
+    forbiddenDependencies: []
+    owner: billing-team

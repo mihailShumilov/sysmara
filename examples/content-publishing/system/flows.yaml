@@ -1,0 +1,86 @@
+flows:
+  - name: article_lifecycle
+    description: End-to-end flow from article creation through the entire editorial lifecycle
+    trigger: create_article
+    module: content
+    steps:
+      - name: create_draft
+        action: create_article
+        onFailure: abort
+
+      - name: write_content
+        action: update_article
+        onFailure: abort
+
+      - name: submit_for_review
+        action: submit_for_review
+        onFailure: abort
+
+      - name: review_process
+        action: review_and_publish
+        onFailure: abort
+
+  - name: review_and_publish
+    description: Editorial review process from submission through publication
+    trigger: submit_for_review
+    module: content
+    steps:
+      - name: assign_reviewer
+        action: assign_reviewer
+        onFailure: abort
+
+      - name: review_article
+        action: review_article
+        onFailure: abort
+
+      - name: decision
+        action: approve_or_reject_article
+        onFailure: abort
+
+      - name: schedule_publish
+        action: publish_article
+        onFailure: abort
+        condition: article.status == approved
+
+  - name: content_moderation
+    description: Comment submission and moderation workflow
+    trigger: create_comment
+    module: engagement
+    steps:
+      - name: create_comment
+        action: create_comment
+        onFailure: abort
+
+      - name: auto_spam_check
+        action: automated_spam_detection
+        onFailure: skip
+
+      - name: queue_moderation
+        action: queue_for_moderation
+        onFailure: abort
+
+      - name: moderate
+        action: moderate_comment
+        onFailure: abort
+
+  - name: article_archival
+    description: Workflow for archiving published articles and cleaning up references
+    trigger: archive_article
+    module: content
+    steps:
+      - name: verify_not_active
+        action: verify_archival_eligibility
+        onFailure: abort
+        condition: article.status == published
+
+      - name: archive
+        action: archive_article
+        onFailure: abort
+
+      - name: notify_author
+        action: notify_author_of_archival
+        onFailure: skip
+
+      - name: remove_from_feeds
+        action: remove_from_public_feeds
+        onFailure: skip
