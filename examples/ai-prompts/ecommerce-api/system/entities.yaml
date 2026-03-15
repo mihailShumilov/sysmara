@@ -1,0 +1,236 @@
+entities:
+  - name: product
+    description: A product listed for sale in the catalog
+    module: catalog
+    fields:
+      - name: id
+        type: uuid
+        required: true
+        description: Unique identifier for the product
+      - name: name
+        type: string
+        required: true
+        description: Display name of the product
+        constraints:
+          - type: minLength
+            value: 1
+            message: Product name cannot be empty
+      - name: description
+        type: text
+        required: true
+        description: Detailed product description
+      - name: slug
+        type: string
+        required: true
+        description: URL-friendly unique identifier for the product
+      - name: price
+        type: decimal
+        required: true
+        description: Product price in the base currency
+        constraints:
+          - type: min
+            value: 0.01
+            message: Price must be greater than zero
+      - name: category_id
+        type: uuid
+        required: true
+        description: Reference to the category this product belongs to
+      - name: image_url
+        type: string
+        required: true
+        description: URL of the product image
+      - name: is_active
+        type: boolean
+        required: true
+        description: Whether the product is currently listed for sale
+      - name: created_at
+        type: datetime
+        required: true
+        description: Timestamp when the product was created
+      - name: updated_at
+        type: datetime
+        required: true
+        description: Timestamp when the product was last updated
+    invariants:
+      - product_name_required
+      - product_price_positive
+      - unique_product_slug
+
+  - name: category
+    description: A grouping for organizing products in the catalog
+    module: catalog
+    fields:
+      - name: id
+        type: uuid
+        required: true
+        description: Unique identifier for the category
+      - name: name
+        type: string
+        required: true
+        description: Display name of the category
+      - name: slug
+        type: string
+        required: true
+        description: URL-friendly unique identifier for the category
+      - name: description
+        type: text
+        required: false
+        description: Optional description of the category
+      - name: parent_id
+        type: uuid
+        required: false
+        description: Reference to the parent category for nested hierarchies
+      - name: created_at
+        type: datetime
+        required: true
+        description: Timestamp when the category was created
+    invariants:
+      - unique_category_slug
+
+  - name: order
+    description: A customer order containing one or more items
+    module: orders
+    fields:
+      - name: id
+        type: uuid
+        required: true
+        description: Unique identifier for the order
+      - name: customer_id
+        type: uuid
+        required: true
+        description: Reference to the customer who placed the order
+      - name: status
+        type: enum(pending,confirmed,processing,shipped,delivered,cancelled)
+        required: true
+        description: Current lifecycle status of the order
+      - name: total_amount
+        type: decimal
+        required: true
+        description: Total monetary value of the order
+      - name: shipping_address
+        type: text
+        required: true
+        description: Full shipping address for delivery
+      - name: payment_method
+        type: string
+        required: true
+        description: Payment method used for the order
+      - name: notes
+        type: text
+        required: false
+        description: Optional notes or special instructions from the customer
+      - name: created_at
+        type: datetime
+        required: true
+        description: Timestamp when the order was placed
+      - name: updated_at
+        type: datetime
+        required: true
+        description: Timestamp when the order was last updated
+    invariants:
+      - order_total_must_match_items
+
+  - name: order_item
+    description: A single line item within an order
+    module: orders
+    fields:
+      - name: id
+        type: uuid
+        required: true
+        description: Unique identifier for the order item
+      - name: order_id
+        type: uuid
+        required: true
+        description: Reference to the parent order
+      - name: product_id
+        type: uuid
+        required: true
+        description: Reference to the product being ordered
+      - name: quantity
+        type: integer
+        required: true
+        description: Number of units ordered
+        constraints:
+          - type: min
+            value: 1
+            message: Quantity must be at least 1
+      - name: unit_price
+        type: decimal
+        required: true
+        description: Price per unit at the time of order
+      - name: subtotal
+        type: decimal
+        required: true
+        description: Total price for this line item (quantity * unit_price)
+      - name: created_at
+        type: datetime
+        required: true
+        description: Timestamp when the order item was created
+    invariants:
+      - order_item_quantity_positive
+
+  - name: inventory
+    description: Stock tracking for a product at a specific warehouse location
+    module: inventory
+    fields:
+      - name: id
+        type: uuid
+        required: true
+        description: Unique identifier for the inventory record
+      - name: product_id
+        type: uuid
+        required: true
+        description: Reference to the product being tracked
+      - name: quantity
+        type: integer
+        required: true
+        description: Current stock quantity available
+      - name: warehouse_location
+        type: string
+        required: true
+        description: Physical or logical warehouse location identifier
+      - name: last_restocked_at
+        type: datetime
+        required: false
+        description: Timestamp when the inventory was last restocked
+      - name: updated_at
+        type: datetime
+        required: true
+        description: Timestamp when the inventory record was last updated
+    invariants:
+      - stock_must_be_positive
+
+  - name: customer
+    description: A registered customer who can place orders
+    module: customers
+    fields:
+      - name: id
+        type: uuid
+        required: true
+        description: Unique identifier for the customer
+      - name: email
+        type: string
+        required: true
+        description: Customer email address, must be unique
+      - name: name
+        type: string
+        required: true
+        description: Full name of the customer
+      - name: shipping_address
+        type: text
+        required: true
+        description: Default shipping address
+      - name: billing_address
+        type: text
+        required: true
+        description: Default billing address
+      - name: created_at
+        type: datetime
+        required: true
+        description: Timestamp when the customer registered
+      - name: updated_at
+        type: datetime
+        required: true
+        description: Timestamp when the customer profile was last updated
+    invariants:
+      - customer_email_unique

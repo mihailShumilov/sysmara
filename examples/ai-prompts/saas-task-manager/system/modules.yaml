@@ -1,0 +1,45 @@
+modules:
+  - name: auth
+    description: Handles user registration, authentication, and role management
+    entities:
+      - user
+    capabilities:
+      - create_user
+      - get_user
+      - list_users
+    allowedDependencies: []
+    forbiddenDependencies:
+      - tasks
+
+  - name: workspaces
+    description: Manages workspaces and their memberships
+    entities:
+      - workspace
+      - workspace_member
+    capabilities:
+      - create_workspace
+      - get_workspace
+      - list_workspaces
+      - invite_member
+    allowedDependencies:
+      - auth
+    forbiddenDependencies: []
+
+  - name: tasks
+    description: Manages tasks, assignments, and comments within workspaces
+    entities:
+      - task
+      - comment
+    capabilities:
+      - create_task
+      - get_task
+      - list_tasks
+      - update_task
+      - delete_task
+      - assign_task
+      - complete_task
+      - add_comment
+    allowedDependencies:
+      - workspaces
+      - auth
+    forbiddenDependencies: []

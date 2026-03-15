@@ -1,0 +1,498 @@
+capabilities:
+  - name: create_product
+    description: Create a new product listing in the catalog
+    module: catalog
+    entities:
+      - product
+    input:
+      - name: name
+        type: string
+        required: true
+        description: Display name of the product
+      - name: description
+        type: text
+        required: true
+        description: Detailed product description
+      - name: slug
+        type: string
+        required: true
+        description: URL-friendly unique identifier
+      - name: price
+        type: decimal
+        required: true
+        description: Product price
+      - name: category_id
+        type: uuid
+        required: true
+        description: Category to assign the product to
+      - name: image_url
+        type: string
+        required: true
+        description: URL of the product image
+      - name: is_active
+        type: boolean
+        required: false
+        description: Whether the product is active (defaults to true)
+    output:
+      - name: product
+        type: product
+        required: true
+        description: The newly created product
+    policies:
+      - seller_policy
+    invariants:
+      - product_name_required
+      - product_price_positive
+      - unique_product_slug
+
+  - name: get_product
+    description: Retrieve a single product by ID or slug
+    module: catalog
+    entities:
+      - product
+    input:
+      - name: product_id
+        type: uuid
+        required: false
+        description: Product ID to look up
+      - name: slug
+        type: string
+        required: false
+        description: Product slug to look up
+    output:
+      - name: product
+        type: product
+        required: true
+        description: The requested product
+    policies:
+      - public_access
+    invariants: []
+    idempotent: true
+
+  - name: list_products
+    description: List products with optional filtering and pagination
+    module: catalog
+    entities:
+      - product
+    input:
+      - name: category_id
+        type: uuid
+        required: false
+        description: Filter by category
+      - name: is_active
+        type: boolean
+        required: false
+        description: Filter by active status
+      - name: page
+        type: integer
+        required: false
+        description: Page number for pagination
+      - name: limit
+        type: integer
+        required: false
+        description: Number of results per page
+      - name: search
+        type: string
+        required: false
+        description: Search term to filter products by name
+    output:
+      - name: products
+        type: product[]
+        required: true
+        description: List of matching products
+      - name: total
+        type: integer
+        required: true
+        description: Total number of matching products
+    policies:
+      - public_access
+    invariants: []
+    idempotent: true
+
+  - name: update_product
+    description: Update an existing product listing
+    module: catalog
+    entities:
+      - product
+    input:
+      - name: product_id
+        type: uuid
+        required: true
+        description: ID of the product to update
+      - name: name
+        type: string
+        required: false
+        description: Updated product name
+      - name: description
+        type: text
+        required: false
+        description: Updated product description
+      - name: price
+        type: decimal
+        required: false
+        description: Updated product price
+      - name: category_id
+        type: uuid
+        required: false
+        description: Updated category assignment
+      - name: image_url
+        type: string
+        required: false
+        description: Updated product image URL
+      - name: is_active
+        type: boolean
+        required: false
+        description: Updated active status
+    output:
+      - name: product
+        type: product
+        required: true
+        description: The updated product
+    policies:
+      - seller_policy
+    invariants:
+      - product_name_required
+      - product_price_positive
+
+  - name: delete_product
+    description: Remove a product from the catalog
+    module: catalog
+    entities:
+      - product
+    input:
+      - name: product_id
+        type: uuid
+        required: true
+        description: ID of the product to delete
+    output:
+      - name: success
+        type: boolean
+        required: true
+        description: Whether the product was successfully deleted
+    policies:
+      - admin_policy
+    invariants: []
+
+  - name: create_category
+    description: Create a new product category
+    module: catalog
+    entities:
+      - category
+    input:
+      - name: name
+        type: string
+        required: true
+        description: Display name of the category
+      - name: slug
+        type: string
+        required: true
+        description: URL-friendly unique identifier
+      - name: description
+        type: text
+        required: false
+        description: Optional category description
+      - name: parent_id
+        type: uuid
+        required: false
+        description: Parent category for nesting
+    output:
+      - name: category
+        type: category
+        required: true
+        description: The newly created category
+    policies:
+      - admin_policy
+    invariants:
+      - unique_category_slug
+
+  - name: list_categories
+    description: List all product categories
+    module: catalog
+    entities:
+      - category
+    input:
+      - name: parent_id
+        type: uuid
+        required: false
+        description: Filter by parent category (null for top-level)
+    output:
+      - name: categories
+        type: category[]
+        required: true
+        description: List of categories
+    policies:
+      - public_access
+    invariants: []
+    idempotent: true
+
+  - name: create_order
+    description: Place a new order with one or more items
+    module: orders
+    entities:
+      - order
+      - order_item
+    input:
+      - name: customer_id
+        type: uuid
+        required: true
+        description: ID of the customer placing the order
+      - name: items
+        type: object[]
+        required: true
+        description: "Array of items: each with product_id, quantity"
+      - name: shipping_address
+        type: text
+        required: true
+        description: Shipping address for delivery
+      - name: payment_method
+        type: string
+        required: true
+        description: Payment method to use
+      - name: notes
+        type: text
+        required: false
+        description: Optional order notes
+    output:
+      - name: order
+        type: order
+        required: true
+        description: The newly created order with items
+      - name: order_items
+        type: order_item[]
+        required: true
+        description: The line items in the order
+    policies:
+      - buyer_policy
+    invariants:
+      - order_total_must_match_items
+    sideEffects:
+      - Sends order confirmation email
+
+  - name: get_order
+    description: Retrieve an order by ID including its line items
+    module: orders
+    entities:
+      - order
+      - order_item
+    input:
+      - name: order_id
+        type: uuid
+        required: true
+        description: ID of the order to retrieve
+    output:
+      - name: order
+        type: order
+        required: true
+        description: The requested order
+      - name: order_items
+        type: order_item[]
+        required: true
+        description: Line items in the order
+    policies:
+      - order_owner_policy
+    invariants: []
+    idempotent: true
+
+  - name: list_orders
+    description: List orders for the authenticated customer
+    module: orders
+    entities:
+      - order
+    input:
+      - name: customer_id
+        type: uuid
+        required: true
+        description: ID of the customer whose orders to list
+      - name: status
+        type: string
+        required: false
+        description: Filter by order status
+      - name: page
+        type: integer
+        required: false
+        description: Page number for pagination
+      - name: limit
+        type: integer
+        required: false
+        description: Number of results per page
+    output:
+      - name: orders
+        type: order[]
+        required: true
+        description: List of matching orders
+      - name: total
+        type: integer
+        required: true
+        description: Total number of matching orders
+    policies:
+      - buyer_policy
+    invariants: []
+    idempotent: true
+
+  - name: cancel_order
+    description: Cancel an existing order and restore inventory
+    module: orders
+    entities:
+      - order
+    input:
+      - name: order_id
+        type: uuid
+        required: true
+        description: ID of the order to cancel
+      - name: reason
+        type: string
+        required: false
+        description: Reason for cancellation
+    output:
+      - name: order
+        type: order
+        required: true
+        description: The cancelled order with updated status
+    policies:
+      - order_owner_policy
+    invariants: []
+    sideEffects:
+      - Sends cancellation email
+      - Restores inventory
+
+  - name: process_payment
+    description: Process payment for an order
+    module: orders
+    entities:
+      - order
+    input:
+      - name: order_id
+        type: uuid
+        required: true
+        description: ID of the order to process payment for
+      - name: payment_token
+        type: string
+        required: true
+        description: Payment gateway token for the transaction
+    output:
+      - name: order
+        type: order
+        required: true
+        description: The order with updated payment status
+      - name: transaction_id
+        type: string
+        required: true
+        description: Payment gateway transaction reference
+    policies:
+      - buyer_policy
+    invariants: []
+    sideEffects:
+      - Charges payment method
+
+  - name: update_inventory
+    description: Update stock quantity for a product
+    module: inventory
+    entities:
+      - inventory
+    input:
+      - name: product_id
+        type: uuid
+        required: true
+        description: ID of the product to update stock for
+      - name: quantity
+        type: integer
+        required: true
+        description: New stock quantity (or adjustment amount)
+      - name: warehouse_location
+        type: string
+        required: false
+        description: Warehouse location to update
+    output:
+      - name: inventory
+        type: inventory
+        required: true
+        description: The updated inventory record
+    policies:
+      - seller_policy
+    invariants:
+      - stock_must_be_positive
+
+  - name: check_stock
+    description: Check current stock availability for a product
+    module: inventory
+    entities:
+      - inventory
+    input:
+      - name: product_id
+        type: uuid
+        required: true
+        description: ID of the product to check stock for
+      - name: warehouse_location
+        type: string
+        required: false
+        description: Specific warehouse to check
+    output:
+      - name: product_id
+        type: uuid
+        required: true
+        description: The product ID checked
+      - name: available_quantity
+        type: integer
+        required: true
+        description: Total available stock quantity
+      - name: in_stock
+        type: boolean
+        required: true
+        description: Whether the product is in stock
+    policies:
+      - public_access
+    invariants: []
+    idempotent: true
+
+  - name: register_customer
+    description: Register a new customer account
+    module: customers
+    entities:
+      - customer
+    input:
+      - name: email
+        type: string
+        required: true
+        description: Customer email address
+      - name: name
+        type: string
+        required: true
+        description: Full name of the customer
+      - name: shipping_address
+        type: text
+        required: true
+        description: Default shipping address
+      - name: billing_address
+        type: text
+        required: true
+        description: Default billing address
+    output:
+      - name: customer
+        type: customer
+        required: true
+        description: The newly registered customer
+    policies: []
+    invariants:
+      - customer_email_unique
+    sideEffects:
+      - Sends welcome email
+
+  - name: get_customer
+    description: Retrieve customer profile by ID
+    module: customers
+    entities:
+      - customer
+    input:
+      - name: customer_id
+        type: uuid
+        required: true
+        description: ID of the customer to retrieve
+    output:
+      - name: customer
+        type: customer
+        required: true
+        description: The requested customer profile
+    policies:
+      - customer_owner_policy
+    invariants: []
+    idempotent: true

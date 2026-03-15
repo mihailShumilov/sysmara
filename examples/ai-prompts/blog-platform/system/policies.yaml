@@ -1,0 +1,108 @@
+policies:
+  - name: admin_policy
+    description: Allows administrators to perform admin-only actions
+    actor: admin
+    capabilities:
+      - create_author
+    conditions:
+      - field: actor.role
+        operator: eq
+        value: admin
+    effect: allow
+
+  - name: public_read_policy
+    description: Allows public read access to published content
+    actor: public
+    capabilities:
+      - get_author
+      - list_authors
+      - get_post
+      - list_posts
+      - list_tags
+      - list_comments
+    conditions:
+      - field: request.method
+        operator: exists
+        value: "true"
+    effect: allow
+
+  - name: writer_policy
+    description: Allows writers and above to create and manage their own content
+    actor: writer
+    capabilities:
+      - create_post
+      - submit_for_review
+      - tag_post
+      - untag_post
+    conditions:
+      - field: actor.role
+        operator: in
+        value:
+          - writer
+          - editor
+          - admin
+    effect: allow
+
+  - name: editor_policy
+    description: Allows editors and admins to manage and moderate content
+    actor: editor
+    capabilities:
+      - delete_post
+      - publish_post
+      - archive_post
+      - create_tag
+      - flag_content
+    conditions:
+      - field: actor.role
+        operator: in
+        value:
+          - editor
+          - admin
+    effect: allow
+
+  - name: post_owner_policy
+    description: Allows post authors to update their own posts
+    actor: post_author
+    capabilities:
+      - update_post
+    conditions:
+      - field: actor.id
+        operator: is_owner
+        value: resource.author_id
+    effect: allow
+
+  - name: author_self_policy
+    description: Allows authors to update their own profile
+    actor: author
+    capabilities:
+      - update_author
+    conditions:
+      - field: actor.id
+        operator: is_owner
+        value: resource.id
+    effect: allow
+
+  - name: moderator_policy
+    description: Allows editors and admins to moderate comments
+    actor: moderator
+    capabilities:
+      - approve_comment
+      - reject_comment
+    conditions:
+      - field: actor.role
+        operator: in
+        value:
+          - editor
+          - admin
+    effect: allow
+
+  - name: public_comment_policy
+    description: Allows anyone to submit comments on published posts
+    actor: public_commenter
+    capabilities:
+      - add_comment
+    conditions:
+      - field: request.method
+        operator: exists
+        value: "true"
+    effect: allow

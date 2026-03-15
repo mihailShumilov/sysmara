@@ -1,0 +1,630 @@
+capabilities:
+  - name: create_author
+    description: Register a new author on the blog platform
+    module: authors
+    entities:
+      - author
+    input:
+      - name: email
+        type: string
+        required: true
+        description: Email address for the new author
+      - name: name
+        type: string
+        required: true
+        description: Display name for the author
+      - name: bio
+        type: text
+        required: false
+        description: Author biography
+      - name: avatar_url
+        type: string
+        required: false
+        description: URL to the author avatar image
+      - name: role
+        type: string
+        required: true
+        description: Role to assign (admin, editor, writer)
+    output:
+      - name: author
+        type: author
+        required: true
+        description: The newly created author record
+    policies:
+      - admin_policy
+    invariants:
+      - author_email_unique
+
+  - name: get_author
+    description: Retrieve a single author by ID
+    module: authors
+    entities:
+      - author
+    input:
+      - name: author_id
+        type: uuid
+        required: true
+        description: ID of the author to retrieve
+    output:
+      - name: author
+        type: author
+        required: true
+        description: The requested author record
+    policies:
+      - public_read_policy
+    invariants: []
+    idempotent: true
+
+  - name: list_authors
+    description: List all authors with optional filtering
+    module: authors
+    entities:
+      - author
+    input:
+      - name: role
+        type: string
+        required: false
+        description: Filter by author role
+      - name: limit
+        type: integer
+        required: false
+        description: Maximum number of results to return
+      - name: offset
+        type: integer
+        required: false
+        description: Number of results to skip for pagination
+    output:
+      - name: authors
+        type: array
+        required: true
+        description: List of author records
+      - name: total
+        type: integer
+        required: true
+        description: Total number of matching authors
+    policies:
+      - public_read_policy
+    invariants: []
+    idempotent: true
+
+  - name: update_author
+    description: Update an existing author profile
+    module: authors
+    entities:
+      - author
+    input:
+      - name: author_id
+        type: uuid
+        required: true
+        description: ID of the author to update
+      - name: email
+        type: string
+        required: false
+        description: Updated email address
+      - name: name
+        type: string
+        required: false
+        description: Updated display name
+      - name: bio
+        type: text
+        required: false
+        description: Updated biography
+      - name: avatar_url
+        type: string
+        required: false
+        description: Updated avatar URL
+    output:
+      - name: author
+        type: author
+        required: true
+        description: The updated author record
+    policies:
+      - author_self_policy
+    invariants:
+      - author_email_unique
+
+  - name: create_post
+    description: Create a new blog post as a draft
+    module: content
+    entities:
+      - post
+    input:
+      - name: title
+        type: string
+        required: true
+        description: Title of the blog post
+      - name: slug
+        type: string
+        required: true
+        description: URL-friendly slug
+      - name: body
+        type: text
+        required: true
+        description: Main content of the post
+      - name: excerpt
+        type: text
+        required: false
+        description: Short summary of the post
+      - name: author_id
+        type: uuid
+        required: true
+        description: ID of the post author
+      - name: featured_image_url
+        type: string
+        required: false
+        description: URL to the featured image
+    output:
+      - name: post
+        type: post
+        required: true
+        description: The newly created post in draft status
+    policies:
+      - writer_policy
+    invariants:
+      - post_title_required
+      - unique_post_slug
+      - post_must_have_author
+
+  - name: get_post
+    description: Retrieve a single post by ID or slug
+    module: content
+    entities:
+      - post
+    input:
+      - name: post_id
+        type: uuid
+        required: false
+        description: ID of the post to retrieve
+      - name: slug
+        type: string
+        required: false
+        description: Slug of the post to retrieve
+    output:
+      - name: post
+        type: post
+        required: true
+        description: The requested post record
+    policies:
+      - public_read_policy
+    invariants: []
+    idempotent: true
+
+  - name: list_posts
+    description: List blog posts with optional filtering and pagination
+    module: content
+    entities:
+      - post
+    input:
+      - name: status
+        type: string
+        required: false
+        description: Filter by post status
+      - name: author_id
+        type: uuid
+        required: false
+        description: Filter by author
+      - name: tag_id
+        type: uuid
+        required: false
+        description: Filter by tag
+      - name: limit
+        type: integer
+        required: false
+        description: Maximum number of results to return
+      - name: offset
+        type: integer
+        required: false
+        description: Number of results to skip for pagination
+    output:
+      - name: posts
+        type: array
+        required: true
+        description: List of post records
+      - name: total
+        type: integer
+        required: true
+        description: Total number of matching posts
+    policies:
+      - public_read_policy
+    invariants: []
+    idempotent: true
+
+  - name: update_post
+    description: Update an existing blog post
+    module: content
+    entities:
+      - post
+    input:
+      - name: post_id
+        type: uuid
+        required: true
+        description: ID of the post to update
+      - name: title
+        type: string
+        required: false
+        description: Updated title
+      - name: slug
+        type: string
+        required: false
+        description: Updated slug
+      - name: body
+        type: text
+        required: false
+        description: Updated content body
+      - name: excerpt
+        type: text
+        required: false
+        description: Updated excerpt
+      - name: featured_image_url
+        type: string
+        required: false
+        description: Updated featured image URL
+    output:
+      - name: post
+        type: post
+        required: true
+        description: The updated post record
+    policies:
+      - post_owner_policy
+    invariants:
+      - post_title_required
+
+  - name: delete_post
+    description: Permanently delete a blog post
+    module: content
+    entities:
+      - post
+    input:
+      - name: post_id
+        type: uuid
+        required: true
+        description: ID of the post to delete
+    output:
+      - name: success
+        type: boolean
+        required: true
+        description: Whether the deletion was successful
+    policies:
+      - editor_policy
+    invariants: []
+
+  - name: publish_post
+    description: Publish an approved blog post making it publicly visible
+    module: content
+    entities:
+      - post
+    input:
+      - name: post_id
+        type: uuid
+        required: true
+        description: ID of the post to publish
+    output:
+      - name: post
+        type: post
+        required: true
+        description: The published post with updated status and published_at
+    policies:
+      - editor_policy
+    invariants:
+      - post_title_required
+    sideEffects:
+      - Sets published_at timestamp
+      - Generates RSS entry
+
+  - name: archive_post
+    description: Archive a post removing it from public listing
+    module: content
+    entities:
+      - post
+    input:
+      - name: post_id
+        type: uuid
+        required: true
+        description: ID of the post to archive
+    output:
+      - name: post
+        type: post
+        required: true
+        description: The archived post with updated status
+    policies:
+      - editor_policy
+    invariants: []
+
+  - name: submit_for_review
+    description: Submit a draft post for editorial review
+    module: content
+    entities:
+      - post
+    input:
+      - name: post_id
+        type: uuid
+        required: true
+        description: ID of the post to submit for review
+    output:
+      - name: post
+        type: post
+        required: true
+        description: The post with status changed to in_review
+    policies:
+      - writer_policy
+    invariants:
+      - post_title_required
+    sideEffects:
+      - Notifies editors
+
+  - name: create_tag
+    description: Create a new tag for categorizing posts
+    module: content
+    entities:
+      - tag
+    input:
+      - name: name
+        type: string
+        required: true
+        description: Display name for the tag
+      - name: slug
+        type: string
+        required: true
+        description: URL-friendly slug for the tag
+      - name: description
+        type: string
+        required: false
+        description: Description of the tag
+    output:
+      - name: tag
+        type: tag
+        required: true
+        description: The newly created tag
+    policies:
+      - editor_policy
+    invariants:
+      - unique_tag_slug
+      - tag_name_required
+
+  - name: list_tags
+    description: List all available tags
+    module: content
+    entities:
+      - tag
+    input:
+      - name: limit
+        type: integer
+        required: false
+        description: Maximum number of results to return
+      - name: offset
+        type: integer
+        required: false
+        description: Number of results to skip for pagination
+    output:
+      - name: tags
+        type: array
+        required: true
+        description: List of tag records
+      - name: total
+        type: integer
+        required: true
+        description: Total number of tags
+    policies:
+      - public_read_policy
+    invariants: []
+    idempotent: true
+
+  - name: tag_post
+    description: Associate a tag with a blog post
+    module: content
+    entities:
+      - post_tag
+      - post
+      - tag
+    input:
+      - name: post_id
+        type: uuid
+        required: true
+        description: ID of the post to tag
+      - name: tag_id
+        type: uuid
+        required: true
+        description: ID of the tag to apply
+    output:
+      - name: post_tag
+        type: post_tag
+        required: true
+        description: The created post-tag association
+    policies:
+      - writer_policy
+    invariants:
+      - unique_post_tag_association
+
+  - name: untag_post
+    description: Remove a tag from a blog post
+    module: content
+    entities:
+      - post_tag
+    input:
+      - name: post_id
+        type: uuid
+        required: true
+        description: ID of the post to untag
+      - name: tag_id
+        type: uuid
+        required: true
+        description: ID of the tag to remove
+    output:
+      - name: success
+        type: boolean
+        required: true
+        description: Whether the tag was successfully removed
+    policies:
+      - writer_policy
+    invariants: []
+
+  - name: add_comment
+    description: Add a comment to a published blog post
+    module: engagement
+    entities:
+      - comment
+      - post
+    input:
+      - name: post_id
+        type: uuid
+        required: true
+        description: ID of the post to comment on
+      - name: author_name
+        type: string
+        required: true
+        description: Name of the commenter
+      - name: author_email
+        type: string
+        required: true
+        description: Email of the commenter
+      - name: body
+        type: text
+        required: true
+        description: Content of the comment
+    output:
+      - name: comment
+        type: comment
+        required: true
+        description: The newly created comment in pending status
+    policies:
+      - public_comment_policy
+    invariants:
+      - comment_body_required
+      - comment_requires_post
+
+  - name: list_comments
+    description: List comments for a post or across all posts
+    module: engagement
+    entities:
+      - comment
+    input:
+      - name: post_id
+        type: uuid
+        required: false
+        description: Filter comments by post
+      - name: status
+        type: string
+        required: false
+        description: Filter by comment status
+      - name: limit
+        type: integer
+        required: false
+        description: Maximum number of results to return
+      - name: offset
+        type: integer
+        required: false
+        description: Number of results to skip for pagination
+    output:
+      - name: comments
+        type: array
+        required: true
+        description: List of comment records
+      - name: total
+        type: integer
+        required: true
+        description: Total number of matching comments
+    policies:
+      - public_read_policy
+    invariants: []
+    idempotent: true
+
+  - name: approve_comment
+    description: Approve a pending comment making it publicly visible
+    module: engagement
+    entities:
+      - comment
+      - moderation_log
+    input:
+      - name: comment_id
+        type: uuid
+        required: true
+        description: ID of the comment to approve
+      - name: moderator_id
+        type: uuid
+        required: true
+        description: ID of the moderator approving the comment
+      - name: reason
+        type: text
+        required: false
+        description: Optional reason for approval
+    output:
+      - name: comment
+        type: comment
+        required: true
+        description: The approved comment
+      - name: moderation_log
+        type: moderation_log
+        required: true
+        description: The moderation log entry
+    policies:
+      - moderator_policy
+    invariants: []
+    sideEffects:
+      - Logs moderation action
+
+  - name: reject_comment
+    description: Reject a pending comment preventing it from being shown
+    module: engagement
+    entities:
+      - comment
+      - moderation_log
+    input:
+      - name: comment_id
+        type: uuid
+        required: true
+        description: ID of the comment to reject
+      - name: moderator_id
+        type: uuid
+        required: true
+        description: ID of the moderator rejecting the comment
+      - name: reason
+        type: text
+        required: false
+        description: Reason for rejection
+    output:
+      - name: comment
+        type: comment
+        required: true
+        description: The rejected comment
+      - name: moderation_log
+        type: moderation_log
+        required: true
+        description: The moderation log entry
+    policies:
+      - moderator_policy
+    invariants: []
+    sideEffects:
+      - Logs moderation action
+
+  - name: flag_content
+    description: Flag content for administrative review
+    module: engagement
+    entities:
+      - moderation_log
+    input:
+      - name: target_type
+        type: string
+        required: true
+        description: Type of content being flagged (post, comment)
+      - name: target_id
+        type: uuid
+        required: true
+        description: ID of the content being flagged
+      - name: moderator_id
+        type: uuid
+        required: true
+        description: ID of the editor flagging the content
+      - name: reason
+        type: text
+        required: true
+        description: Reason for flagging the content
+    output:
+      - name: moderation_log
+        type: moderation_log
+        required: true
+        description: The moderation log entry for the flag action
+    policies:
+      - editor_policy
+    invariants: []
+    sideEffects:
+      - Notifies admin

@@ -1,0 +1,42 @@
+invariants:
+  - name: email_must_be_unique
+    description: No two users may share the same email address
+    entity: user
+    rule: user.email must be unique across all user records
+    severity: error
+    enforcement: runtime
+
+  - name: unique_workspace_slug
+    description: Workspace slugs must be globally unique
+    entity: workspace
+    rule: workspace.slug must be unique across all workspace records
+    severity: error
+    enforcement: runtime
+
+  - name: workspace_must_have_owner
+    description: Every workspace must reference a valid owner
+    entity: workspace
+    rule: workspace.owner_id must reference an existing user
+    severity: error
+    enforcement: both
+
+  - name: task_title_required
+    description: Every task must have a non-empty title
+    entity: task
+    rule: task.title must be a non-empty string
+    severity: error
+    enforcement: both
+
+  - name: unique_workspace_membership
+    description: A user can only have one membership per workspace
+    entity: workspace_member
+    rule: The combination of workspace_id and user_id must be unique
+    severity: error
+    enforcement: runtime
+
+  - name: comment_body_required
+    description: Every comment must have a non-empty body
+    entity: comment
+    rule: comment.body must be a non-empty string
+    severity: error
+    enforcement: runtime

@@ -1,0 +1,63 @@
+invariants:
+  - name: author_email_unique
+    description: Each author must have a unique email address
+    entity: author
+    rule: "no two authors may share the same email address"
+    severity: error
+    enforcement: runtime
+
+  - name: post_title_required
+    description: Every post must have a non-empty title
+    entity: post
+    rule: "post.title must be a non-empty string"
+    severity: error
+    enforcement: both
+
+  - name: unique_post_slug
+    description: Each post must have a unique slug for URL routing
+    entity: post
+    rule: "no two posts may share the same slug"
+    severity: error
+    enforcement: runtime
+
+  - name: post_must_have_author
+    description: Every post must be associated with a valid author
+    entity: post
+    rule: "post.author_id must reference an existing author"
+    severity: error
+    enforcement: both
+
+  - name: unique_tag_slug
+    description: Each tag must have a unique slug for URL routing
+    entity: tag
+    rule: "no two tags may share the same slug"
+    severity: error
+    enforcement: runtime
+
+  - name: tag_name_required
+    description: Every tag must have a non-empty name
+    entity: tag
+    rule: "tag.name must be a non-empty string"
+    severity: error
+    enforcement: both
+
+  - name: unique_post_tag_association
+    description: A tag can only be applied to a post once
+    entity: post_tag
+    rule: "no two post_tag records may share the same post_id and tag_id combination"
+    severity: error
+    enforcement: runtime
+
+  - name: comment_body_required
+    description: Every comment must have a non-empty body
+    entity: comment
+    rule: "comment.body must be a non-empty string"
+    severity: error
+    enforcement: both
+
+  - name: comment_requires_post
+    description: Every comment must be associated with an existing post
+    entity: comment
+    rule: "comment.post_id must reference an existing post"
+    severity: error
+    enforcement: runtime

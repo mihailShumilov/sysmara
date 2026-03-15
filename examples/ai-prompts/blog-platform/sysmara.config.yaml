@@ -1,0 +1,14 @@
+name: blog-platform
+version: 0.1.0
+
+paths:
+  specDir: ./system
+  appDir: ./app
+  frameworkDir: ./.framework
+  generatedDir: ./app/generated
+
+server:
+  port: 3000
+  host: 0.0.0.0
+
+logLevel: info

@@ -1,0 +1,56 @@
+invariants:
+  - name: product_name_required
+    description: Every product must have a non-empty name
+    entity: product
+    rule: "Product must have a non-empty name"
+    severity: error
+    enforcement: both
+
+  - name: product_price_positive
+    description: Product prices must be greater than zero
+    entity: product
+    rule: "Product price must be greater than zero"
+    severity: error
+    enforcement: runtime
+
+  - name: unique_product_slug
+    description: No two products may share the same slug
+    entity: product
+    rule: "Product slug must be unique across all products"
+    severity: error
+    enforcement: runtime
+
+  - name: unique_category_slug
+    description: No two categories may share the same slug
+    entity: category
+    rule: "Category slug must be unique"
+    severity: error
+    enforcement: runtime
+
+  - name: order_total_must_match_items
+    description: The order total must equal the sum of its line item subtotals
+    entity: order
+    rule: "Order total must equal the sum of order item subtotals"
+    severity: error
+    enforcement: runtime
+
+  - name: order_item_quantity_positive
+    description: Every order item must have a quantity of at least one
+    entity: order_item
+    rule: "Order item quantity must be at least 1"
+    severity: error
+    enforcement: both
+
+  - name: stock_must_be_positive
+    description: Inventory stock must never go negative
+    entity: inventory
+    rule: "Inventory stock quantity must not be negative"
+    severity: error
+    enforcement: runtime
+
+  - name: customer_email_unique
+    description: No two customers may register with the same email address
+    entity: customer
+    rule: "Customer email must be unique"
+    severity: error
+    enforcement: runtime

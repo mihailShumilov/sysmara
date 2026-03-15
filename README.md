@@ -4,6 +4,28 @@
 
 > An AI-native backend framework where architecture is machine-readable, constraint-aware, and safe for AI-driven change.
 
+## Build from One Prompt
+
+Write a single product description. An AI agent reads [BOOTSTRAP.md](./BOOTSTRAP.md) and generates a fully working SysMARA project — specs, compiled routes, tests, running server.
+
+```
+Human: "Build a task manager with workspaces, tasks, and user roles"
+
+AI Agent:
+  → npx @sysmara/core init
+  → Generates entities, capabilities, policies, invariants, modules, flows
+  → sysmara build (validates + compiles)
+  → Implements capability handlers
+  → Server running on :3000
+```
+
+Three complete examples in [examples/ai-prompts/](./examples/ai-prompts/):
+- **saas-task-manager** — workspaces, tasks, assignments, roles
+- **ecommerce-api** — products, orders, inventory, checkout flow
+- **blog-platform** — posts, authors, tags, moderation
+
+See [docs/one-prompt-workflow.md](./docs/one-prompt-workflow.md) for the full step-by-step protocol with AI prompts.
+
 ## What is SysMARA?
 
 Traditional backend frameworks assume that a human developer understands the hidden architecture of the system: which modules depend on which, what constraints apply to each field, how a change in one entity ripples through capabilities, policies, and invariants. This implicit knowledge lives in documentation, tribal memory, and convention. It works when humans are the primary implementors, but it breaks down the moment an AI agent is tasked with making changes.
