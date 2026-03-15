@@ -196,7 +196,9 @@ describe('CLI commands', () => {
       const map1 = buildSystemMap(result.specs!);
       const map2 = buildSystemMap(result.specs!);
 
-      expect(JSON.stringify(map1)).toBe(JSON.stringify(map2));
+      // Compare everything except generatedAt (timestamp is non-deterministic)
+      const normalize = (m: typeof map1) => JSON.stringify({ ...m, generatedAt: '' });
+      expect(normalize(map1)).toBe(normalize(map2));
     });
   });
 });
