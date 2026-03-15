@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] — 2026-03-15
+
+### Added
+
+- **Flow Execution Engine:** production-ready flow executor with full lifecycle management
+  - Saga compensation — on step failure, compensate completed steps in reverse order
+  - Retry with exponential backoff — configurable max retries and base delay
+  - Condition evaluation — safe recursive descent parser (no eval) for step conditions
+  - Context threading — step outputs flow to subsequent steps automatically
+  - AI-readable execution log with structured summaries (success rate, avg duration, recent failures)
+  - Flow validation — check all step capabilities exist before execution
+- **CLI commands:** `sysmara flow list`, `flow validate`, `flow run`, `flow log`
+- **FlowExecutor class:** pluggable capability handler for testing and production use
+- **FlowExecutionLog class:** in-memory execution store with summarize() API
+- **Condition evaluator:** supports property access, comparison operators, logical AND/OR, null/boolean/string/number literals
+- **Comprehensive test suite:** 24 tests covering happy path, abort, skip, compensate, retry, conditions, context threading, validation, and log summarization
+
 ## [0.2.0] — 2026-03-14
 
 ### Added

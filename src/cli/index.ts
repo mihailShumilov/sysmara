@@ -21,9 +21,10 @@ import { commandImpact } from './commands/impact.js';
 import { commandPlanCreate, commandPlanShow } from './commands/plan.js';
 import { commandCheckBoundaries } from './commands/check.js';
 import { commandDbGenerate, commandDbMigrate, commandDbStatus } from './commands/db.js';
+import { commandFlowList, commandFlowValidate, commandFlowRun, commandFlowLog } from './commands/flow.js';
 
 /** Current CLI version string, displayed by `--version`. */
-const VERSION = '0.2.0';
+const VERSION = '0.4.0';
 
 /**
  * Prints the CLI usage information, listing all available commands and options,
@@ -51,6 +52,10 @@ Commands:
   db generate                  Generate database schema from specs
   db migrate                   Create database migration
   db status                    Show database adapter status
+  flow list                    List all flows with step counts
+  flow validate <name>         Validate a flow (check capabilities exist)
+  flow run <name> --input <j>  Execute a flow with JSON input
+  flow log                     Show execution log summary
   help                         Show this help
 
 Options:
@@ -232,6 +237,37 @@ async function main(): Promise<void> {
           await commandDbStatus(cwd, config, jsonMode);
         } else {
           console.error('Usage: sysmara db <generate|migrate|status>');
+          process.exit(1);
+        }
+        break;
+      }
+
+      case 'flow': {
+        const subcommand = positional[1];
+        const config = resolveConfig(path.join(cwd, 'sysmara.config.yaml'));
+
+        if (subcommand === 'list') {
+          await commandFlowList(cwd, config, jsonMode);
+        } else if (subcommand === 'validate') {
+          const name = positional[2];
+          if (!name) {
+            console.error('Usage: sysmara flow validate <name>');
+            process.exit(1);
+          }
+          await commandFlowValidate(cwd, name, config, jsonMode);
+        } else if (subcommand === 'run') {
+          const name = positional[2];
+          const inputIdx = rawArgs.indexOf('--input');
+          const inputJson = inputIdx !== -1 ? rawArgs[inputIdx + 1] : undefined;
+          if (!name || !inputJson) {
+            console.error('Usage: sysmara flow run <name> --input <json>');
+            process.exit(1);
+          }
+          await commandFlowRun(cwd, name, inputJson, config, jsonMode);
+        } else if (subcommand === 'log') {
+          await commandFlowLog(cwd, config, jsonMode);
+        } else {
+          console.error('Usage: sysmara flow <list|validate|run|log>');
           process.exit(1);
         }
         break;

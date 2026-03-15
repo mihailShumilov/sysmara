@@ -76,6 +76,26 @@ export type {
   DatabaseStatus,
 } from './database/index.js';
 
+// Flow Execution Engine — saga compensation, retry, and AI-readable execution log
+export {
+  FlowExecutor,
+  FlowExecutionLog,
+  evaluateCondition,
+} from './flow/index.js';
+export type {
+  CapabilityHandler,
+  FlowExecutorConfig,
+  FlowStatus,
+  StepStatus,
+  FlowContext,
+  FlowError,
+  StepExecutionRecord,
+  FlowExecutionRecord,
+  FlowSummary,
+  FlowValidationResult,
+  FlowLogSummary,
+} from './flow/index.js';
+
 // SysMARA ORM — AI-first database layer
 export {
   SysmaraORM,

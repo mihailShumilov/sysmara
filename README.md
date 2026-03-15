@@ -89,6 +89,75 @@ sysmara graph
 
 Builds `system-graph.json` and `system-map.json` in the `.framework/` directory.
 
+## Flow Execution Engine
+
+SysMARA v0.4.0 includes a production-ready Flow Execution Engine that makes flows actually execute — not just validate. Flows are multi-step workflows triggered by capabilities, with full saga compensation, retry logic, and AI-readable execution logs.
+
+### Core Features
+
+- **Steps are capabilities** — each step maps to a declared CapabilitySpec
+- **Context threading** — output of step N is available as input to step N+1
+- **Saga compensation** — on failure, compensation runs in reverse order for completed steps
+- **Retry with exponential backoff** — configurable max retries and base delay
+- **Condition evaluation** — safe expression evaluation (no eval) for step conditions
+- **AI-readable execution log** — every state transition recorded as structured JSON
+
+### Usage
+
+```typescript
+import { FlowExecutor } from '@sysmara/core';
+
+const executor = new FlowExecutor(specs, {
+  capabilityHandler: async (capability, input, context) => {
+    // Execute the capability — plug in your own DB/service logic
+    return myService.run(capability, input);
+  },
+});
+
+// Execute a flow
+const result = await executor.execute('user_signup_flow', {
+  email: 'alice@example.com',
+  role: 'member',
+});
+
+console.log(result.status);           // "completed" | "failed" | "compensated"
+console.log(result.summary);          // AI-readable summary
+console.log(result.steps);            // Detailed step records
+
+// Validate a flow before execution
+const validation = executor.validate('user_signup_flow');
+
+// Query execution history
+const log = executor.getExecutionLog();
+console.log(log.summarize());         // Success rate, avg duration, recent failures
+```
+
+### Flow Spec Example
+
+```yaml
+flows:
+  - name: user_signup_flow
+    description: Full user signup with compensation
+    trigger: user_signup
+    module: auth
+    steps:
+      - name: create_user
+        action: create_user
+        onFailure: compensate
+        compensation: delete_user
+      - name: create_profile
+        action: create_profile
+        onFailure: compensate
+        compensation: delete_profile
+      - name: send_email
+        action: send_welcome_email
+        onFailure: skip
+      - name: admin_setup
+        action: setup_admin
+        onFailure: abort
+        condition: 'context.input.role === "admin"'
+```
+
 ## Database Layer
 
 SysMARA v0.3.0 ships a pluggable database adapter system. Configure your adapter in `sysmara.config.yaml`:
@@ -323,7 +392,7 @@ invariants:
     message: A user with this email already exists
 ```
 
-## v0.3.0 Status
+## v0.4.0 Status
 
 ### Production-Ready
 
@@ -338,17 +407,17 @@ invariants:
 - Safe edit zone validation
 - HTTP runtime with typed handlers
 - Change Plan Protocol with risk classification and impact analysis
-- CLI commands: init, add, build, graph, compile, diagnose, doctor, explain, impact, plan, check boundaries
+- CLI commands: init, add, build, graph, compile, diagnose, doctor, explain, impact, plan, check boundaries, db, flow
 - Database adapter interface and registry
 - Prisma adapter (schema + repository generation)
 - Drizzle adapter (TypeScript-first schema)
 - TypeORM adapter (@Entity classes)
 - SysMARA ORM (AI-first ORM with capability-based queries, operation log, migration engine)
+- Flow Execution Engine (saga compensation, retry with backoff, condition evaluation, AI-readable execution log)
 
 ### Experimental
 
 - Impact analysis (graph traversal for change surface computation)
-- Flow execution engine
 - Generated artifact management
 
 ### Planned for Later
@@ -408,6 +477,12 @@ sysmara db generate    # generate schema from entity specs
 sysmara db migrate     # create migration file
 sysmara db status      # show migration status
 
+# Flow execution
+sysmara flow list                        # list all flows with step counts
+sysmara flow validate <name>             # validate a flow
+sysmara flow run <name> --input <json>   # execute a flow
+sysmara flow log                         # show execution log summary
+
 # Show help
 sysmara help
 ```
@@ -429,6 +504,10 @@ import {
   generateChangePlan,
   createEmptyPlan,
   renderChangePlanTerminal,
+  // Flow Execution Engine
+  FlowExecutor,
+  FlowExecutionLog,
+  evaluateCondition,
   // Database
   SysmaraORM,
   SysmaraRepository,
