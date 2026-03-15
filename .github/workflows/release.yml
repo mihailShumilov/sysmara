@@ -41,6 +41,7 @@ jobs:
         with:
           node-version: 20
           cache: npm
+          registry-url: https://registry.npmjs.org
 
       - run: npm ci
 
@@ -75,7 +76,9 @@ jobs:
       - name: Publish to npm
         run: npm publish --provenance --access public
         env:
-          NPM_CONFIG_REGISTRY: https://registry.npmjs.org/
+          # For npm Trusted Publishers (OIDC), NODE_AUTH_TOKEN must be set to empty string
+          # so that setup-node's .npmrc uses provenance/OIDC flow instead of token auth
+          NODE_AUTH_TOKEN: "no-token-needed-using-oidc"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
