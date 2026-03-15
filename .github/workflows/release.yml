@@ -32,7 +32,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # Need full history + push access
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -40,11 +39,7 @@ jobs:
         with:
           node-version: 20
           cache: npm
-
-      - name: Configure npm for trusted publisher
-        run: |
-          echo "//registry.npmjs.org/:_authToken=" >> ~/.npmrc
-          npm config set registry https://registry.npmjs.org/
+          registry-url: https://registry.npmjs.org
 
       - run: npm ci
 
@@ -78,6 +73,8 @@ jobs:
 
       - name: Publish to npm
         run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
