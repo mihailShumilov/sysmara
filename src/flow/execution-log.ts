@@ -4,7 +4,7 @@
  * Stores all flow execution records and provides AI-readable summaries.
  */
 
-import type { FlowExecutionRecord, FlowError, FlowLogSummary } from './types.js';
+import type { FlowExecutionRecord, FlowLogSummary } from './types.js';
 
 /**
  * In-memory store for flow execution records.

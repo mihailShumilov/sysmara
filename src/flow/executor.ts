@@ -19,7 +19,6 @@ import type {
   FlowContext,
   FlowError,
   FlowStatus,
-  StepStatus,
   StepExecutionRecord,
   FlowExecutionRecord,
   FlowSummary,
@@ -112,7 +111,7 @@ export class FlowExecutor {
    * @param config - Optional executor configuration
    */
   constructor(
-    private specs: SystemSpecs,
+    specs: SystemSpecs,
     config: FlowExecutorConfig = {},
   ) {
     this.maxRetries = config.maxRetries ?? 3;
@@ -547,7 +546,7 @@ export class FlowExecutor {
   /**
    * Builds an AI-readable summary from step execution records.
    */
-  private buildSummary(flowName: string, steps: StepExecutionRecord[]): FlowSummary {
+  private buildSummary(_flowName: string, steps: StepExecutionRecord[]): FlowSummary {
     const capabilitiesInvoked = [...new Set(steps.map((s) => s.action))];
 
     // Resolve entities affected by the invoked capabilities
