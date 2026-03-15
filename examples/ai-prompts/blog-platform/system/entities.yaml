@@ -1,0 +1,280 @@
+entities:
+  - name: author
+    description: A content author or contributor on the blog platform
+    module: authors
+    fields:
+      - name: id
+        type: uuid
+        required: true
+        description: Unique identifier for the author
+      - name: email
+        type: string
+        required: true
+        description: Author email address
+        constraints:
+          - type: format
+            value: email
+            message: Must be a valid email address
+      - name: name
+        type: string
+        required: true
+        description: Display name of the author
+        constraints:
+          - type: minLength
+            value: 1
+            message: Name cannot be empty
+      - name: bio
+        type: text
+        required: false
+        description: Author biography
+      - name: avatar_url
+        type: string
+        required: false
+        description: URL to the author avatar image
+      - name: role
+        type: string
+        required: true
+        description: Author role on the platform
+        constraints:
+          - type: enum
+            value:
+              - admin
+              - editor
+              - writer
+      - name: created_at
+        type: datetime
+        required: true
+        description: Timestamp when the author was created
+      - name: updated_at
+        type: datetime
+        required: false
+        description: Timestamp when the author was last updated
+    invariants:
+      - author_email_unique
+
+  - name: post
+    description: A blog post containing content written by an author
+    module: content
+    fields:
+      - name: id
+        type: uuid
+        required: true
+        description: Unique identifier for the post
+      - name: title
+        type: string
+        required: true
+        description: Title of the blog post
+        constraints:
+          - type: minLength
+            value: 1
+            message: Title cannot be empty
+          - type: maxLength
+            value: 255
+            message: Title must be 255 characters or fewer
+      - name: slug
+        type: string
+        required: true
+        description: URL-friendly slug for the post
+        constraints:
+          - type: pattern
+            value: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+            message: Slug must be lowercase alphanumeric with hyphens
+      - name: body
+        type: text
+        required: true
+        description: Main content body of the post
+      - name: excerpt
+        type: text
+        required: false
+        description: Short summary or excerpt of the post
+      - name: status
+        type: string
+        required: true
+        description: Current publication status of the post
+        constraints:
+          - type: enum
+            value:
+              - draft
+              - in_review
+              - approved
+              - published
+              - archived
+      - name: author_id
+        type: uuid
+        required: true
+        description: Reference to the post author
+      - name: published_at
+        type: datetime
+        required: false
+        description: Timestamp when the post was published
+      - name: featured_image_url
+        type: string
+        required: false
+        description: URL to the featured image for the post
+      - name: created_at
+        type: datetime
+        required: true
+        description: Timestamp when the post was created
+      - name: updated_at
+        type: datetime
+        required: false
+        description: Timestamp when the post was last updated
+    invariants:
+      - post_title_required
+      - unique_post_slug
+      - post_must_have_author
+
+  - name: tag
+    description: A tag used to categorize blog posts
+    module: content
+    fields:
+      - name: id
+        type: uuid
+        required: true
+        description: Unique identifier for the tag
+      - name: name
+        type: string
+        required: true
+        description: Display name of the tag
+        constraints:
+          - type: minLength
+            value: 1
+            message: Tag name cannot be empty
+      - name: slug
+        type: string
+        required: true
+        description: URL-friendly slug for the tag
+        constraints:
+          - type: pattern
+            value: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+            message: Slug must be lowercase alphanumeric with hyphens
+      - name: description
+        type: string
+        required: false
+        description: Description of the tag
+      - name: created_at
+        type: datetime
+        required: true
+        description: Timestamp when the tag was created
+    invariants:
+      - unique_tag_slug
+      - tag_name_required
+
+  - name: post_tag
+    description: Association between a post and a tag
+    module: content
+    fields:
+      - name: id
+        type: uuid
+        required: true
+        description: Unique identifier for the association
+      - name: post_id
+        type: uuid
+        required: true
+        description: Reference to the post
+      - name: tag_id
+        type: uuid
+        required: true
+        description: Reference to the tag
+      - name: created_at
+        type: datetime
+        required: true
+        description: Timestamp when the tag was applied to the post
+    invariants:
+      - unique_post_tag_association
+
+  - name: comment
+    description: A comment left by a reader on a blog post
+    module: engagement
+    fields:
+      - name: id
+        type: uuid
+        required: true
+        description: Unique identifier for the comment
+      - name: post_id
+        type: uuid
+        required: true
+        description: Reference to the post being commented on
+      - name: author_name
+        type: string
+        required: true
+        description: Name of the commenter
+      - name: author_email
+        type: string
+        required: true
+        description: Email of the commenter
+        constraints:
+          - type: format
+            value: email
+            message: Must be a valid email address
+      - name: body
+        type: text
+        required: true
+        description: Content of the comment
+        constraints:
+          - type: minLength
+            value: 1
+            message: Comment body cannot be empty
+      - name: status
+        type: string
+        required: true
+        description: Moderation status of the comment
+        constraints:
+          - type: enum
+            value:
+              - pending
+              - approved
+              - rejected
+              - spam
+      - name: created_at
+        type: datetime
+        required: true
+        description: Timestamp when the comment was created
+      - name: updated_at
+        type: datetime
+        required: false
+        description: Timestamp when the comment was last updated
+    invariants:
+      - comment_body_required
+      - comment_requires_post
+
+  - name: moderation_log
+    description: Audit log of moderation actions taken on content
+    module: engagement
+    fields:
+      - name: id
+        type: uuid
+        required: true
+        description: Unique identifier for the log entry
+      - name: target_type
+        type: string
+        required: true
+        description: Type of the moderated entity (e.g. comment, post)
+      - name: target_id
+        type: uuid
+        required: true
+        description: ID of the moderated entity
+      - name: action
+        type: string
+        required: true
+        description: Moderation action taken
+        constraints:
+          - type: enum
+            value:
+              - approve
+              - reject
+              - flag
+              - unflag
+      - name: moderator_id
+        type: uuid
+        required: true
+        description: Reference to the moderator who performed the action
+      - name: reason
+        type: text
+        required: false
+        description: Optional reason for the moderation action
+      - name: created_at
+        type: datetime
+        required: true
+        description: Timestamp when the moderation action was taken
+    invariants: []

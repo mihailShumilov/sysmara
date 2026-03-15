@@ -1,0 +1,32 @@
+flows:
+  - name: task_lifecycle
+    description: Handles the full lifecycle of creating and optionally assigning a task
+    trigger: create_task
+    module: tasks
+    steps:
+      - name: create_task
+        action: create_task
+        onFailure: abort
+      - name: assign_task
+        action: assign_task
+        onFailure: skip
+        condition: context.input.assignee_id !== undefined
+      - name: send_task_notification
+        action: send_task_notification
+        onFailure: skip
+
+  - name: workspace_onboarding
+    description: Sets up a new workspace and invites the initial member
+    trigger: create_workspace
+    module: workspaces
+    steps:
+      - name: create_workspace
+        action: create_workspace
+        onFailure: abort
+      - name: invite_member
+        action: invite_member
+        onFailure: compensate
+        compensation: create_workspace
+      - name: send_welcome
+        action: send_welcome
+        onFailure: skip

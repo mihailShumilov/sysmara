@@ -1,0 +1,70 @@
+policies:
+  - name: admin_full_access
+    description: Grants full access to platform administrators
+    actor: admin
+    capabilities:
+      - create_user
+      - list_users
+    conditions:
+      - field: actor.role
+        operator: eq
+        value: admin
+    effect: allow
+
+  - name: authenticated_access
+    description: Grants access to any authenticated user
+    actor: authenticated_user
+    capabilities:
+      - get_user
+      - create_workspace
+      - list_workspaces
+    conditions:
+      - field: actor.id
+        operator: exists
+        value: "true"
+    effect: allow
+
+  - name: workspace_member_policy
+    description: Grants access to workspace members with sufficient roles
+    actor: workspace_member
+    capabilities:
+      - get_workspace
+      - create_task
+      - get_task
+      - list_tasks
+      - assign_task
+      - add_comment
+    conditions:
+      - field: actor.role
+        operator: in
+        value:
+          - owner
+          - admin
+          - member
+    effect: allow
+
+  - name: workspace_admin_policy
+    description: Grants administrative access within a workspace
+    actor: workspace_admin
+    capabilities:
+      - invite_member
+    conditions:
+      - field: actor.role
+        operator: in
+        value:
+          - owner
+          - admin
+    effect: allow
+
+  - name: task_owner_policy
+    description: Grants access to the task creator or workspace admin
+    actor: task_owner_or_admin
+    capabilities:
+      - update_task
+      - delete_task
+      - complete_task
+    conditions:
+      - field: actor.id
+        operator: is_owner
+        value: resource.creator_id
+    effect: allow

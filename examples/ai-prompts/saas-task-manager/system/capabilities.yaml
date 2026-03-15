@@ -1,0 +1,414 @@
+capabilities:
+  - name: create_user
+    description: Register a new user on the platform
+    module: auth
+    entities:
+      - user
+    input:
+      - name: email
+        type: string
+        required: true
+        description: Email address for the new user
+      - name: name
+        type: string
+        required: true
+        description: Display name for the new user
+      - name: role
+        type: string
+        required: true
+        description: Platform role (admin, member, or guest)
+    output:
+      - name: user
+        type: user
+        required: true
+        description: The newly created user record
+    policies:
+      - admin_full_access
+    invariants:
+      - email_must_be_unique
+
+  - name: get_user
+    description: Retrieve a user by their ID
+    module: auth
+    entities:
+      - user
+    input:
+      - name: user_id
+        type: uuid
+        required: true
+        description: ID of the user to retrieve
+    output:
+      - name: user
+        type: user
+        required: true
+        description: The requested user record
+    policies:
+      - authenticated_access
+    invariants: []
+
+  - name: list_users
+    description: List all users on the platform
+    module: auth
+    entities:
+      - user
+    input:
+      - name: limit
+        type: integer
+        required: false
+        description: Maximum number of users to return
+      - name: offset
+        type: integer
+        required: false
+        description: Number of users to skip for pagination
+    output:
+      - name: users
+        type: array(user)
+        required: true
+        description: List of user records
+      - name: total
+        type: integer
+        required: true
+        description: Total number of users
+    policies:
+      - admin_full_access
+    invariants: []
+
+  - name: create_workspace
+    description: Create a new workspace
+    module: workspaces
+    entities:
+      - workspace
+    input:
+      - name: name
+        type: string
+        required: true
+        description: Name of the workspace
+      - name: slug
+        type: string
+        required: true
+        description: URL-friendly identifier for the workspace
+      - name: description
+        type: string
+        required: false
+        description: Optional workspace description
+    output:
+      - name: workspace
+        type: workspace
+        required: true
+        description: The newly created workspace
+    policies:
+      - authenticated_access
+    invariants:
+      - unique_workspace_slug
+
+  - name: get_workspace
+    description: Retrieve a workspace by its ID
+    module: workspaces
+    entities:
+      - workspace
+    input:
+      - name: workspace_id
+        type: uuid
+        required: true
+        description: ID of the workspace to retrieve
+    output:
+      - name: workspace
+        type: workspace
+        required: true
+        description: The requested workspace record
+    policies:
+      - workspace_member_policy
+    invariants: []
+
+  - name: list_workspaces
+    description: List workspaces accessible to the current user
+    module: workspaces
+    entities:
+      - workspace
+    input:
+      - name: limit
+        type: integer
+        required: false
+        description: Maximum number of workspaces to return
+      - name: offset
+        type: integer
+        required: false
+        description: Number of workspaces to skip for pagination
+    output:
+      - name: workspaces
+        type: array(workspace)
+        required: true
+        description: List of workspace records
+      - name: total
+        type: integer
+        required: true
+        description: Total number of accessible workspaces
+    policies:
+      - authenticated_access
+    invariants: []
+
+  - name: invite_member
+    description: Invite a user to join a workspace with a specific role
+    module: workspaces
+    entities:
+      - workspace_member
+      - workspace
+    input:
+      - name: workspace_id
+        type: uuid
+        required: true
+        description: ID of the workspace to invite the user to
+      - name: user_id
+        type: uuid
+        required: true
+        description: ID of the user to invite
+      - name: role
+        type: string
+        required: true
+        description: Role to assign (admin, member, or viewer)
+    output:
+      - name: membership
+        type: workspace_member
+        required: true
+        description: The newly created membership record
+    policies:
+      - workspace_admin_policy
+    invariants:
+      - unique_workspace_membership
+    sideEffects:
+      - Sends invitation email
+
+  - name: create_task
+    description: Create a new task in a workspace
+    module: tasks
+    entities:
+      - task
+    input:
+      - name: title
+        type: string
+        required: true
+        description: Title of the task
+      - name: description
+        type: string
+        required: false
+        description: Detailed description of the task
+      - name: status
+        type: string
+        required: false
+        description: Initial status (defaults to todo)
+      - name: priority
+        type: string
+        required: true
+        description: Priority level (low, medium, high, urgent)
+      - name: workspace_id
+        type: uuid
+        required: true
+        description: ID of the workspace this task belongs to
+      - name: assignee_id
+        type: uuid
+        required: false
+        description: ID of the user to assign the task to
+      - name: due_date
+        type: datetime
+        required: false
+        description: Optional deadline for the task
+    output:
+      - name: task
+        type: task
+        required: true
+        description: The newly created task
+    policies:
+      - workspace_member_policy
+    invariants:
+      - task_title_required
+
+  - name: get_task
+    description: Retrieve a task by its ID
+    module: tasks
+    entities:
+      - task
+    input:
+      - name: task_id
+        type: uuid
+        required: true
+        description: ID of the task to retrieve
+    output:
+      - name: task
+        type: task
+        required: true
+        description: The requested task record
+    policies:
+      - workspace_member_policy
+    invariants: []
+
+  - name: list_tasks
+    description: List tasks in a workspace with optional filters
+    module: tasks
+    entities:
+      - task
+    input:
+      - name: workspace_id
+        type: uuid
+        required: true
+        description: ID of the workspace to list tasks from
+      - name: status
+        type: string
+        required: false
+        description: Filter by task status
+      - name: assignee_id
+        type: uuid
+        required: false
+        description: Filter by assigned user
+      - name: priority
+        type: string
+        required: false
+        description: Filter by priority level
+      - name: limit
+        type: integer
+        required: false
+        description: Maximum number of tasks to return
+      - name: offset
+        type: integer
+        required: false
+        description: Number of tasks to skip for pagination
+    output:
+      - name: tasks
+        type: array(task)
+        required: true
+        description: List of task records
+      - name: total
+        type: integer
+        required: true
+        description: Total number of matching tasks
+    policies:
+      - workspace_member_policy
+    invariants: []
+
+  - name: update_task
+    description: Update an existing task
+    module: tasks
+    entities:
+      - task
+    input:
+      - name: task_id
+        type: uuid
+        required: true
+        description: ID of the task to update
+      - name: title
+        type: string
+        required: false
+        description: Updated title
+      - name: description
+        type: string
+        required: false
+        description: Updated description
+      - name: status
+        type: string
+        required: false
+        description: Updated status
+      - name: priority
+        type: string
+        required: false
+        description: Updated priority
+      - name: due_date
+        type: datetime
+        required: false
+        description: Updated deadline
+    output:
+      - name: task
+        type: task
+        required: true
+        description: The updated task record
+    policies:
+      - task_owner_policy
+    invariants:
+      - task_title_required
+
+  - name: delete_task
+    description: Delete a task permanently
+    module: tasks
+    entities:
+      - task
+    input:
+      - name: task_id
+        type: uuid
+        required: true
+        description: ID of the task to delete
+    output:
+      - name: success
+        type: boolean
+        required: true
+        description: Whether the deletion was successful
+    policies:
+      - task_owner_policy
+    invariants: []
+
+  - name: assign_task
+    description: Assign or reassign a task to a workspace member
+    module: tasks
+    entities:
+      - task
+      - workspace_member
+    input:
+      - name: task_id
+        type: uuid
+        required: true
+        description: ID of the task to assign
+      - name: assignee_id
+        type: uuid
+        required: true
+        description: ID of the user to assign the task to
+    output:
+      - name: task
+        type: task
+        required: true
+        description: The updated task with new assignee
+    policies:
+      - workspace_member_policy
+    invariants: []
+    sideEffects:
+      - Sends assignment notification
+
+  - name: complete_task
+    description: Mark a task as done
+    module: tasks
+    entities:
+      - task
+    input:
+      - name: task_id
+        type: uuid
+        required: true
+        description: ID of the task to complete
+    output:
+      - name: task
+        type: task
+        required: true
+        description: The completed task record
+    policies:
+      - task_owner_policy
+    invariants: []
+
+  - name: add_comment
+    description: Add a comment to a task
+    module: tasks
+    entities:
+      - comment
+      - task
+    input:
+      - name: task_id
+        type: uuid
+        required: true
+        description: ID of the task to comment on
+      - name: body
+        type: string
+        required: true
+        description: The comment text
+    output:
+      - name: comment
+        type: comment
+        required: true
+        description: The newly created comment
+    policies:
+      - workspace_member_policy
+    invariants:
+      - comment_body_required

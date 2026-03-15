@@ -1,0 +1,77 @@
+policies:
+  - name: public_access
+    description: Allow unauthenticated access to public catalog and stock data
+    actor: anonymous
+    capabilities:
+      - get_product
+      - list_products
+      - list_categories
+      - check_stock
+    conditions:
+      - field: request.method
+        operator: exists
+        value: "true"
+    effect: allow
+
+  - name: buyer_policy
+    description: Allow authenticated customers to place and view orders
+    actor: authenticated_customer
+    capabilities:
+      - create_order
+      - list_orders
+      - process_payment
+    conditions:
+      - field: actor.id
+        operator: exists
+        value: "true"
+    effect: allow
+
+  - name: seller_policy
+    description: Allow sellers to manage products and inventory
+    actor: seller
+    capabilities:
+      - create_product
+      - update_product
+      - update_inventory
+    conditions:
+      - field: actor.role
+        operator: in
+        value:
+          - seller
+          - admin
+    effect: allow
+
+  - name: admin_policy
+    description: Allow admins to perform destructive and organizational actions
+    actor: admin
+    capabilities:
+      - delete_product
+      - create_category
+    conditions:
+      - field: actor.role
+        operator: eq
+        value: admin
+    effect: allow
+
+  - name: order_owner_policy
+    description: Allow customers to view and cancel their own orders
+    actor: order_owner
+    capabilities:
+      - get_order
+      - cancel_order
+    conditions:
+      - field: actor.id
+        operator: is_owner
+        value: resource.customer_id
+    effect: allow
+
+  - name: customer_owner_policy
+    description: Allow customers to view their own profile
+    actor: customer
+    capabilities:
+      - get_customer
+    conditions:
+      - field: actor.id
+        operator: is_owner
+        value: resource.id
+    effect: allow

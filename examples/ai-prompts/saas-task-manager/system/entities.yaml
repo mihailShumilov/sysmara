@@ -1,0 +1,168 @@
+entities:
+  - name: user
+    description: A registered user of the platform
+    module: auth
+    fields:
+      - name: id
+        type: uuid
+        required: true
+        description: Unique identifier for the user
+      - name: email
+        type: string
+        required: true
+        description: User email address, must be unique
+      - name: name
+        type: string
+        required: true
+        description: Display name of the user
+      - name: role
+        type: enum(admin,member,guest)
+        required: true
+        description: Global platform role
+      - name: created_at
+        type: datetime
+        required: true
+        description: Timestamp when the user was created
+    invariants:
+      - email_must_be_unique
+
+  - name: workspace
+    description: A collaborative workspace that contains tasks and members
+    module: workspaces
+    fields:
+      - name: id
+        type: uuid
+        required: true
+        description: Unique identifier for the workspace
+      - name: name
+        type: string
+        required: true
+        description: Human-readable workspace name
+      - name: slug
+        type: string
+        required: true
+        description: URL-friendly unique identifier
+      - name: description
+        type: string
+        required: false
+        description: Optional description of the workspace purpose
+      - name: owner_id
+        type: uuid
+        required: true
+        description: Reference to the user who owns this workspace
+      - name: created_at
+        type: datetime
+        required: true
+        description: Timestamp when the workspace was created
+      - name: updated_at
+        type: datetime
+        required: true
+        description: Timestamp when the workspace was last updated
+    invariants:
+      - unique_workspace_slug
+      - workspace_must_have_owner
+
+  - name: task
+    description: A unit of work within a workspace
+    module: tasks
+    fields:
+      - name: id
+        type: uuid
+        required: true
+        description: Unique identifier for the task
+      - name: title
+        type: string
+        required: true
+        description: Short summary of the task
+      - name: description
+        type: string
+        required: false
+        description: Detailed description of the task
+      - name: status
+        type: enum(todo,in_progress,done,archived)
+        required: true
+        description: Current lifecycle status of the task
+      - name: priority
+        type: enum(low,medium,high,urgent)
+        required: true
+        description: Priority level of the task
+      - name: workspace_id
+        type: uuid
+        required: true
+        description: Reference to the workspace this task belongs to
+      - name: assignee_id
+        type: uuid
+        required: false
+        description: Reference to the user assigned to this task
+      - name: creator_id
+        type: uuid
+        required: true
+        description: Reference to the user who created this task
+      - name: due_date
+        type: datetime
+        required: false
+        description: Optional deadline for the task
+      - name: created_at
+        type: datetime
+        required: true
+        description: Timestamp when the task was created
+      - name: updated_at
+        type: datetime
+        required: true
+        description: Timestamp when the task was last updated
+    invariants:
+      - task_title_required
+
+  - name: workspace_member
+    description: Association between a user and a workspace with a specific role
+    module: workspaces
+    fields:
+      - name: id
+        type: uuid
+        required: true
+        description: Unique identifier for the membership record
+      - name: workspace_id
+        type: uuid
+        required: true
+        description: Reference to the workspace
+      - name: user_id
+        type: uuid
+        required: true
+        description: Reference to the user
+      - name: role
+        type: enum(owner,admin,member,viewer)
+        required: true
+        description: Role of the user within this workspace
+      - name: joined_at
+        type: datetime
+        required: true
+        description: Timestamp when the user joined the workspace
+    invariants:
+      - unique_workspace_membership
+
+  - name: comment
+    description: A comment left on a task by a user
+    module: tasks
+    fields:
+      - name: id
+        type: uuid
+        required: true
+        description: Unique identifier for the comment
+      - name: task_id
+        type: uuid
+        required: true
+        description: Reference to the task being commented on
+      - name: author_id
+        type: uuid
+        required: true
+        description: Reference to the user who wrote the comment
+      - name: body
+        type: string
+        required: true
+        description: The comment text content
+      - name: created_at
+        type: datetime
+        required: true
+        description: Timestamp when the comment was created
+    invariants:
+      - comment_body_required

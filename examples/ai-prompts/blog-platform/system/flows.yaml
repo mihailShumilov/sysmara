@@ -1,0 +1,40 @@
+flows:
+  - name: post_publishing_flow
+    description: Handles the workflow of submitting a post for editorial review
+    trigger: submit_for_review
+    module: content
+    steps:
+      - name: submit
+        action: submit_for_review
+        onFailure: abort
+      - name: notify_editors
+        action: notify_editor_review
+        onFailure: skip
+
+  - name: moderation_flow
+    description: Handles the workflow of approving a comment and notifying the author
+    trigger: approve_comment
+    module: engagement
+    steps:
+      - name: approve
+        action: approve_comment
+        onFailure: abort
+      - name: notify_author
+        action: notify_comment_approved
+        onFailure: skip
+
+  - name: content_lifecycle
+    description: Handles the creation of a new post with optional auto-tagging and team notification
+    trigger: create_post
+    module: content
+    steps:
+      - name: create_draft
+        action: create_post
+        onFailure: abort
+      - name: auto_tag
+        action: tag_post
+        onFailure: skip
+        condition: "context.input.tags !== undefined"
+      - name: notify_team
+        action: notify_new_post
+        onFailure: skip

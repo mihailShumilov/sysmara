@@ -1,0 +1,52 @@
+modules:
+  - name: authors
+    description: Manages author profiles and identity on the blog platform
+    entities:
+      - author
+    capabilities:
+      - create_author
+      - get_author
+      - list_authors
+      - update_author
+    allowedDependencies: []
+    forbiddenDependencies:
+      - engagement
+
+  - name: content
+    description: Manages blog posts, tags, and content lifecycle
+    entities:
+      - post
+      - tag
+      - post_tag
+    capabilities:
+      - create_post
+      - get_post
+      - list_posts
+      - update_post
+      - delete_post
+      - publish_post
+      - archive_post
+      - submit_for_review
+      - create_tag
+      - list_tags
+      - tag_post
+      - untag_post
+    allowedDependencies:
+      - authors
+    forbiddenDependencies: []
+
+  - name: engagement
+    description: Manages comments, moderation, and reader interaction
+    entities:
+      - comment
+      - moderation_log
+    capabilities:
+      - add_comment
+      - list_comments
+      - approve_comment
+      - reject_comment
+      - flag_content
+    allowedDependencies:
+      - content
+      - authors
+    forbiddenDependencies: []

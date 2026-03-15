@@ -1,0 +1,38 @@
+flows:
+  - name: checkout_flow
+    description: End-to-end checkout process from stock validation through payment and confirmation
+    trigger: create_order
+    module: orders
+    steps:
+      - name: validate_stock
+        action: check_stock
+        onFailure: abort
+      - name: create_order
+        action: create_order
+        onFailure: abort
+      - name: process_payment
+        action: process_payment
+        onFailure: compensate
+        compensation: cancel_order
+      - name: reduce_inventory
+        action: update_inventory
+        onFailure: compensate
+        compensation: cancel_order
+      - name: send_confirmation
+        action: send_order_confirmation
+        onFailure: skip
+
+  - name: order_cancellation_flow
+    description: Cancel an order and restore inventory with customer notification
+    trigger: cancel_order
+    module: orders
+    steps:
+      - name: cancel_order
+        action: cancel_order
+        onFailure: abort
+      - name: restore_inventory
+        action: update_inventory
+        onFailure: retry
+      - name: send_cancellation_email
+        action: send_cancellation_notification
+        onFailure: skip

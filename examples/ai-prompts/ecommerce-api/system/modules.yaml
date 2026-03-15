@@ -1,0 +1,59 @@
+modules:
+  - name: catalog
+    description: Product and category management for the storefront
+    entities:
+      - product
+      - category
+    capabilities:
+      - create_product
+      - get_product
+      - list_products
+      - update_product
+      - delete_product
+      - create_category
+      - list_categories
+    allowedDependencies: []
+    forbiddenDependencies:
+      - orders
+
+  - name: orders
+    description: Order lifecycle management including placement, payment, and cancellation
+    entities:
+      - order
+      - order_item
+    capabilities:
+      - create_order
+      - get_order
+      - list_orders
+      - cancel_order
+      - process_payment
+    allowedDependencies:
+      - catalog
+      - inventory
+      - customers
+    forbiddenDependencies: []
+
+  - name: inventory
+    description: Stock tracking and warehouse management
+    entities:
+      - inventory
+    capabilities:
+      - update_inventory
+      - check_stock
+    allowedDependencies:
+      - catalog
+    forbiddenDependencies:
+      - orders
+      - customers
+
+  - name: customers
+    description: Customer registration and profile management
+    entities:
+      - customer
+    capabilities:
+      - register_customer
+      - get_customer
+    allowedDependencies: []
+    forbiddenDependencies:
+      - catalog
+      - inventory

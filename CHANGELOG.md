@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] — 2026-03-15
+
+### Added
+
+- **AI Bootstrap Guide** (`BOOTSTRAP.md`): standalone protocol for AI agents to turn a human product description into a fully working SysMARA project — step-by-step from init to running server
+- **AI Agent Guide** (`docs/ai-agent-guide.md`): human-readable documentation explaining SysMARA from an AI agent's perspective, including "Why this works" philosophy section
+- **One-Prompt Workflow** (`docs/one-prompt-workflow.md`): exact step-by-step workflow from human prompt to working project, with copy-paste AI prompts for each step
+- **Three one-prompt example projects** in `examples/ai-prompts/`:
+  - `saas-task-manager/` — 5 entities, 15 capabilities, 5 policies, 6 invariants, 3 modules, 2 flows
+  - `ecommerce-api/` — 6 entities, 16 capabilities, 6 policies, 8 invariants, 4 modules, 2 flows
+  - `blog-platform/` — 6 entities, 21 capabilities, 8 policies, 9 invariants, 3 modules, 3 flows
+- **"Build from one prompt" section** in README.md
+
 ## [0.4.0] — 2026-03-15
 
 ### Added
