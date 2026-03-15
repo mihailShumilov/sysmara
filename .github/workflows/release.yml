@@ -1,7 +1,6 @@
 name: Release
 
 on:
-  # Auto patch bump + publish on every push to main
   push:
     branches:
       - main
@@ -9,7 +8,6 @@ on:
       - '**.md'
       - 'docs/**'
 
-  # Manual release for minor/major bumps
   workflow_dispatch:
     inputs:
       bump:
@@ -27,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      id-token: write
+      id-token: write  # Required for OIDC trusted publisher
 
     steps:
       - uses: actions/checkout@v4
@@ -35,11 +33,18 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      # Do NOT use registry-url here — it creates .npmrc with NODE_AUTH_TOKEN
+      # which conflicts with OIDC trusted publisher auth
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-          registry-url: https://registry.npmjs.org
+
+      # Manually configure registry without auth token
+      # OIDC token is provided automatically via id-token: write permission
+      - name: Configure npm registry
+        run: |
+          npm config set registry https://registry.npmjs.org/
 
       - run: npm ci
 
@@ -71,10 +76,8 @@ jobs:
           git commit -m "chore: bump version to ${{ steps.bump.outputs.version }} [skip ci]"
           git push
 
-      - name: Publish to npm
+      - name: Publish to npm (trusted publisher / OIDC)
         run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
