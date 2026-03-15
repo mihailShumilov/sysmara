@@ -76,6 +76,9 @@ jobs:
           git commit -m "chore: bump version to ${{ steps.bump.outputs.version }} [skip ci]"
           git push
 
+      - name: Update npm (OIDC trusted publisher requires npm >= 9.6.0)
+        run: npm install -g npm@latest
+
       - name: Publish to npm (trusted publisher / OIDC)
         run: npm publish --provenance --access public
 
