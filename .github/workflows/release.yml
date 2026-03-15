@@ -7,7 +7,6 @@ on:
       - main
     paths-ignore:
       - '**.md'
-      - '.github/**'
       - 'docs/**'
 
   # Manual release for minor/major bumps
