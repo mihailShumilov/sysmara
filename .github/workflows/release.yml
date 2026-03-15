@@ -41,7 +41,6 @@ jobs:
         with:
           node-version: 20
           cache: npm
-          registry-url: https://registry.npmjs.org
 
       - run: npm ci
 
@@ -75,6 +74,8 @@ jobs:
 
       - name: Publish to npm
         run: npm publish --provenance --access public
+        env:
+          NPM_CONFIG_REGISTRY: https://registry.npmjs.org/
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
