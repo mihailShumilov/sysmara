@@ -89,6 +89,96 @@ sysmara graph
 
 Builds `system-graph.json` and `system-map.json` in the `.framework/` directory.
 
+## Database Layer
+
+SysMARA v0.3.0 ships a pluggable database adapter system. Configure your adapter in `sysmara.config.yaml`:
+
+```yaml
+database:
+  adapter: prisma        # prisma | drizzle | typeorm | sysmara-orm
+  provider: postgresql   # postgresql | mysql | sqlite
+  outputDir: app/generated/db
+```
+
+### Supported Adapters
+
+| Adapter | Type | Best for |
+|---------|------|----------|
+| `prisma` | Third-party | Teams already using Prisma |
+| `drizzle` | Third-party | Edge/serverless, TypeScript-first |
+| `typeorm` | Third-party | NestJS/Java-style projects |
+| `sysmara-orm` | Native | AI-agent workflows |
+
+### CLI
+
+```bash
+sysmara db generate    # generate schema from entity specs
+sysmara db migrate     # create migration file
+sysmara db status      # show migration status
+```
+
+## SysMARA ORM
+
+SysMARA ORM is an AI-native ORM built from the ground up for agent workflows — not adapted from human tooling.
+
+### Core principles
+
+**Schema IS the System Graph.** The ORM has no separate schema file. It reads `system-graph.json` directly. There is one source of truth.
+
+**Every query is a capability.** There are no arbitrary queries. Every database operation maps to a declared capability in your specs. AI agents cannot make unauthorized queries.
+
+**Invariants are database constraints.** Invariants declared in `invariants.yaml` are enforced at the database level — not just in runtime validation. The ORM knows your constraints because it reads the spec.
+
+**Machine-readable operation log.** Every query is logged as structured JSON:
+
+```json
+{
+  "capability": "create_user",
+  "entity": "user",
+  "operation": "insert",
+  "invariants_checked": ["email_must_be_unique"],
+  "affected_fields": ["email", "role"],
+  "duration_ms": 12,
+  "affected_rows": 1,
+  "sql_template": "INSERT INTO users (email, role) VALUES ($1, $2)"
+}
+```
+
+AI agents can read this log to understand what the system is doing — not guess from opaque ORM internals.
+
+**Impact-aware migrations.** Before applying a migration, the engine runs impact analysis and shows which capabilities and invariants are affected:
+
+```bash
+sysmara db migrate
+# → Impact analysis: changing users.role affects:
+#     capability: create_user (input validation)
+#     policy: user_creation_policy (role check)
+#     invariant: role_must_be_valid
+#   Risk: medium
+# Proceed? [y/N]
+```
+
+### Usage
+
+```typescript
+import { SysmaraORM } from "@sysmara/core";
+
+const orm = new SysmaraORM(config, specs);
+
+// Execute a declared capability
+const user = await orm.capability("create_user", { email: "alice@example.com", role: "admin" });
+
+// Typed repository
+const repo = orm.repository("user");
+const user = await repo.findOne({ email: "alice@example.com" });
+const users = await repo.findMany({ role: "admin" });
+await repo.update(user.id, { role: "member" });
+await repo.delete(user.id);
+
+// Read operation log
+const log = orm.getOperationLog();
+```
+
 ## Project Structure
 
 ```
@@ -233,7 +323,7 @@ invariants:
     message: A user with this email already exists
 ```
 
-## v0.1 Status
+## v0.3.0 Status
 
 ### Production-Ready
 
@@ -247,6 +337,13 @@ invariants:
 - Invariant resolution engine
 - Safe edit zone validation
 - HTTP runtime with typed handlers
+- Change Plan Protocol with risk classification and impact analysis
+- CLI commands: init, add, build, graph, compile, diagnose, doctor, explain, impact, plan, check boundaries
+- Database adapter interface and registry
+- Prisma adapter (schema + repository generation)
+- Drizzle adapter (TypeScript-first schema)
+- TypeORM adapter (@Entity classes)
+- SysMARA ORM (AI-first ORM with capability-based queries, operation log, migration engine)
 
 ### Experimental
 
@@ -256,11 +353,9 @@ invariants:
 
 ### Planned for Later
 
-- Full codegen pipeline (database schemas, API clients, migration scripts)
-- Change protocol (RFC-style formal change proposals)
+- Full codegen pipeline (API clients, migration scripts)
 - Multi-agent coordination (lock-free concurrent spec editing)
 - Plugin system (custom diagnostics, compilers, and validators)
-- Database adapter generation (Postgres, SQLite, MongoDB)
 - API client generation (TypeScript, Python, Go)
 
 ## Installation
@@ -277,6 +372,9 @@ Requires Node.js 20 or later.
 # Initialize a new project with example specs
 sysmara init
 
+# Add a spec (entity, capability, policy, invariant, module, flow)
+sysmara add <type> <name>
+
 # Parse, validate, build graph, compile, and diagnose
 sysmara build
 
@@ -289,8 +387,26 @@ sysmara diagnose
 # Run the capability compiler
 sysmara compile
 
-# Analyze impact of a change target
-sysmara impact entity:user
+# Comprehensive system health check
+sysmara doctor
+
+# Check module boundary violations
+sysmara check boundaries
+
+# Explain a capability, invariant, or module
+sysmara explain <type> <name>
+
+# Analyze impact of a capability or entity
+sysmara impact <type> <name>
+
+# Create and display change plans
+sysmara plan create <title>
+sysmara plan show <file>
+
+# Database commands
+sysmara db generate    # generate schema from entity specs
+sysmara db migrate     # create migration file
+sysmara db status      # show migration status
 
 # Show help
 sysmara help
@@ -309,6 +425,17 @@ import {
   formatDiagnosticsTerminal,
   analyzeImpact,
   resolveConfig,
+  // Change Plan Protocol
+  generateChangePlan,
+  createEmptyPlan,
+  renderChangePlanTerminal,
+  // Database
+  SysmaraORM,
+  SysmaraRepository,
+  MigrationEngine,
+  registerAdapter,
+  getAdapter,
+  listAdapters,
 } from '@sysmara/core';
 
 // Load and parse specs
@@ -331,6 +458,11 @@ console.log(formatDiagnosticsTerminal(report));
 
 // Analyze impact
 const impact = analyzeImpact(graph, 'entity:user');
+
+// Database — SysMARA ORM
+const orm = new SysmaraORM(config, specs);
+const repo = orm.repository('user');
+const user = await repo.findOne({ email: 'alice@example.com' });
 ```
 
 ### Runtime Server
