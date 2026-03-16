@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] — 2026-03-16
+
+### Added
+
+- **Scaffold command** (`sysmara scaffold`): generates starter TypeScript implementation files in `app/` from YAML specs:
+  - `app/entities/<name>.ts` — typed interface with validation helper
+  - `app/capabilities/<name>.ts` — handler with typed input/output, policy/invariant TODOs
+  - `app/policies/<name>.ts` — enforce function with condition comments
+  - `app/invariants/<name>.ts` — validate function referencing entity type
+  - `app/services/<module>.ts` — service class with method stubs per capability
+- Scaffold is integrated into `sysmara build` (step 5) — runs automatically, skips existing files
+- Standalone `sysmara scaffold` command for running independently
+- Shared type utilities (`toPascalCase`, `toCamelCase`, `mapFieldType`) extracted to `src/scaffold/type-utils.ts`
+- `scaffoldSpecs()` exported from `@sysmara/core` for programmatic use
+- 24 new tests for scaffold generators, scaffolder, and type utilities
+
+### Fixed
+
+- **Compiler path bug:** `compileCapabilities()` was prefixing generated file paths with the absolute `outputDir`, causing double-path-join when CLI commands wrote files — resulting in nested filesystem-root directory structures inside `app/generated/`. Paths are now relative (`routes/foo.ts`, `tests/foo.test.ts`, `metadata/foo.json`).
+- Removed unused `outputDir` parameter from `compileCapabilities()` (breaking change for programmatic API users who passed it — the parameter was silently ignored before this fix)
+
 ## [0.5.0] — 2026-03-15
 
 ### Added

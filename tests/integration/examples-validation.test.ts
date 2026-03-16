@@ -58,7 +58,7 @@ describe('SaaS Billing example', () => {
   it('compiles capabilities', async () => {
     const { specs } = await loadExampleSpecs('saas-billing');
     expect(specs).not.toBeNull();
-    const output = compileCapabilities(specs!, '/tmp/test-output');
+    const output = compileCapabilities(specs!);
     expect(output.files.length).toBeGreaterThan(0);
     expect(output.manifest.files.length).toBeGreaterThan(0);
   });
@@ -108,7 +108,7 @@ describe('Admin Approvals example', () => {
   it('compiles capabilities', async () => {
     const { specs } = await loadExampleSpecs('admin-approvals');
     expect(specs).not.toBeNull();
-    const output = compileCapabilities(specs!, '/tmp/test-output');
+    const output = compileCapabilities(specs!);
     expect(output.files.length).toBeGreaterThan(0);
   });
 });
@@ -148,7 +148,7 @@ describe('Content Publishing example', () => {
   it('compiles capabilities', async () => {
     const { specs } = await loadExampleSpecs('content-publishing');
     expect(specs).not.toBeNull();
-    const output = compileCapabilities(specs!, '/tmp/test-output');
+    const output = compileCapabilities(specs!);
     expect(output.files.length).toBeGreaterThan(0);
   });
 });

@@ -16,6 +16,7 @@ import type {
   GeneratedFileEntry,
   Diagnostic,
 } from '../types/index.js';
+import { toPascalCase, mapFieldType } from '../scaffold/type-utils.js';
 
 /**
  * The result returned by {@link compileCapabilities}.
@@ -43,61 +44,6 @@ export interface GeneratedFile {
   content: string;
   source: string;
   zone: EditZone;
-}
-
-/**
- * Converts a hyphen- or underscore-delimited string to PascalCase.
- *
- * @param str - The input string (e.g., `"create-order"` or `"create_order"`).
- * @returns The PascalCase version of the string (e.g., `"CreateOrder"`).
- */
-function toPascalCase(str: string): string {
-  return str
-    .split(/[-_]/)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join('');
-}
-
-/**
- * Maps a specification-level type name to its TypeScript equivalent.
- *
- * Handles common aliases such as `"integer"`, `"float"`, `"decimal"` (all map to
- * `number`), `"bool"` (maps to `boolean`), and temporal types like `"date"`,
- * `"datetime"`, `"timestamp"` (all map to `Date`). Array types (`"string[]"`,
- * `"number[]"`, `"boolean[]"`) and object types (`"object"`, `"json"`) are also
- * supported. Unrecognized types fall back to `"unknown"`.
- *
- * @param specType - The type string from the capability specification (case-insensitive).
- * @returns The corresponding TypeScript type as a string.
- */
-function mapFieldType(specType: string): string {
-  switch (specType.toLowerCase()) {
-    case 'string':
-      return 'string';
-    case 'number':
-    case 'integer':
-    case 'float':
-    case 'decimal':
-      return 'number';
-    case 'boolean':
-    case 'bool':
-      return 'boolean';
-    case 'date':
-    case 'datetime':
-    case 'timestamp':
-      return 'Date';
-    case 'string[]':
-      return 'string[]';
-    case 'number[]':
-      return 'number[]';
-    case 'boolean[]':
-      return 'boolean[]';
-    case 'object':
-    case 'json':
-      return 'Record<string, unknown>';
-    default:
-      return 'unknown';
-  }
 }
 
 /**
@@ -439,20 +385,18 @@ function collectDiagnostics(specs: SystemSpecs): Diagnostic[] {
  * that are missing.
  *
  * @param specs - The full system specification containing capabilities, entities, policies, invariants, etc.
- * @param outputDir - The base directory path under which generated files will be placed.
  * @returns A {@link CompilerOutput} containing the generated files, a manifest, and any diagnostics.
  *
  * @example
  * ```ts
- * const output = compileCapabilities(specs, './generated');
+ * const output = compileCapabilities(specs);
  * for (const file of output.files) {
- *   await fs.writeFile(file.path, file.content);
+ *   await fs.writeFile(path.join(outputDir, file.path), file.content);
  * }
  * ```
  */
 export function compileCapabilities(
   specs: SystemSpecs,
-  outputDir: string,
 ): CompilerOutput {
   const files: GeneratedFile[] = [];
   const diagnostics = collectDiagnostics(specs);
@@ -460,7 +404,7 @@ export function compileCapabilities(
   for (const capability of specs.capabilities) {
     // 1. Route handler stub
     const routeContent = generateRouteHandler(capability);
-    const routePath = `${outputDir}/routes/${capability.name}.ts`;
+    const routePath = `routes/${capability.name}.ts`;
     files.push({
       path: routePath,
       content: routeContent,
@@ -470,7 +414,7 @@ export function compileCapabilities(
 
     // 2. Test scaffold
     const testContent = generateTestScaffold(capability, specs);
-    const testPath = `${outputDir}/tests/${capability.name}.test.ts`;
+    const testPath = `tests/${capability.name}.test.ts`;
     files.push({
       path: testPath,
       content: testContent,
@@ -480,7 +424,7 @@ export function compileCapabilities(
 
     // 3. Capability metadata
     const metadataContent = generateMetadata(capability, specs);
-    const metadataPath = `${outputDir}/metadata/${capability.name}.json`;
+    const metadataPath = `metadata/${capability.name}.json`;
     files.push({
       path: metadataPath,
       content: metadataContent,

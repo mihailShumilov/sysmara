@@ -29,6 +29,10 @@ export { buildSystemGraph, buildSystemMap } from './graph/index.js';
 export { compileCapabilities } from './compiler/index.js';
 export type { CompilerOutput, GeneratedFile } from './compiler/index.js';
 
+// Scaffold — spec-driven implementation stub generator
+export { scaffoldSpecs } from './scaffold/index.js';
+export type { ScaffoldOutput, ScaffoldFile } from './scaffold/index.js';
+
 // Diagnostics — system-wide health reporting
 export { runDiagnostics, formatDiagnosticsTerminal, formatDiagnosticsJSON } from './diagnostics/index.js';
 

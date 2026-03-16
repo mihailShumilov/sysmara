@@ -16,8 +16,6 @@ function makeSpecs(overrides: Partial<SystemSpecs> = {}): SystemSpecs {
 }
 
 describe('compileCapabilities', () => {
-  const outputDir = '/tmp/sysmara-test';
-
   it('should produce route handler, test scaffold, and metadata files', () => {
     const specs = makeSpecs({
       capabilities: [
@@ -34,13 +32,13 @@ describe('compileCapabilities', () => {
       ],
     });
 
-    const result = compileCapabilities(specs, outputDir);
+    const result = compileCapabilities(specs);
     expect(result.files).toHaveLength(3);
 
     const paths = result.files.map((f) => f.path);
-    expect(paths).toContain(`${outputDir}/routes/create-user.ts`);
-    expect(paths).toContain(`${outputDir}/tests/create-user.test.ts`);
-    expect(paths).toContain(`${outputDir}/metadata/create-user.json`);
+    expect(paths).toContain('routes/create-user.ts');
+    expect(paths).toContain('tests/create-user.test.ts');
+    expect(paths).toContain('metadata/create-user.json');
   });
 
   it('should generate route handler with correct capability name, description, input/output types', () => {
@@ -65,8 +63,8 @@ describe('compileCapabilities', () => {
       ],
     });
 
-    const result = compileCapabilities(specs, outputDir);
-    const routeFile = result.files.find((f) => f.path.endsWith('create-user.ts') && f.path.includes('/routes/'));
+    const result = compileCapabilities(specs);
+    const routeFile = result.files.find((f) => f.path.endsWith('create-user.ts') && f.path.startsWith('routes/'));
     expect(routeFile).toBeDefined();
 
     const content = routeFile!.content;
@@ -99,7 +97,7 @@ describe('compileCapabilities', () => {
       ],
     });
 
-    const result = compileCapabilities(specs, outputDir);
+    const result = compileCapabilities(specs);
     const testFile = result.files.find((f) => f.path.endsWith('.test.ts'));
     expect(testFile).toBeDefined();
 
@@ -149,7 +147,7 @@ describe('compileCapabilities', () => {
       ],
     });
 
-    const result = compileCapabilities(specs, outputDir);
+    const result = compileCapabilities(specs);
     const metadataFile = result.files.find((f) => f.path.endsWith('.json'));
     expect(metadataFile).toBeDefined();
 
@@ -184,7 +182,7 @@ describe('compileCapabilities', () => {
       ],
     });
 
-    const result = compileCapabilities(specs, outputDir);
+    const result = compileCapabilities(specs);
     expect(result.manifest.files).toHaveLength(3);
     expect(result.manifest.generatedAt).toBeDefined();
 
@@ -196,11 +194,11 @@ describe('compileCapabilities', () => {
     }
 
     // Route handler is generated zone (regenerable), test scaffold is editable (not regenerable)
-    const routeEntry = result.manifest.files.find((f) => f.path.includes('/routes/'));
+    const routeEntry = result.manifest.files.find((f) => f.path.startsWith('routes/'));
     expect(routeEntry!.zone).toBe('generated');
     expect(routeEntry!.regenerable).toBe(true);
 
-    const testEntry = result.manifest.files.find((f) => f.path.includes('/tests/'));
+    const testEntry = result.manifest.files.find((f) => f.path.startsWith('tests/'));
     expect(testEntry!.zone).toBe('editable');
     expect(testEntry!.regenerable).toBe(false);
   });
@@ -231,12 +229,12 @@ describe('compileCapabilities', () => {
       ],
     });
 
-    const result = compileCapabilities(specs, outputDir);
+    const result = compileCapabilities(specs);
     // 3 files per capability * 2 capabilities = 6
     expect(result.files).toHaveLength(6);
     expect(result.manifest.files).toHaveLength(6);
 
-    const routeFiles = result.files.filter((f) => f.path.includes('/routes/'));
+    const routeFiles = result.files.filter((f) => f.path.startsWith('routes/'));
     expect(routeFiles).toHaveLength(2);
   });
 
@@ -256,8 +254,8 @@ describe('compileCapabilities', () => {
       ],
     });
 
-    const result = compileCapabilities(specs, outputDir);
-    const routeFile = result.files.find((f) => f.path.includes('/routes/'));
+    const result = compileCapabilities(specs);
+    const routeFile = result.files.find((f) => f.path.startsWith('routes/'));
     expect(routeFile!.content).toContain('CreateUserAccountInput');
     expect(routeFile!.content).toContain('CreateUserAccountOutput');
   });
@@ -278,7 +276,7 @@ describe('compileCapabilities', () => {
       ],
     });
 
-    const result = compileCapabilities(specs, outputDir);
+    const result = compileCapabilities(specs);
     expect(result.diagnostics.length).toBeGreaterThan(0);
     expect(result.diagnostics[0]!.code).toBe('CAP_UNDEFINED_ENTITY');
   });

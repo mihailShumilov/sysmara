@@ -86,7 +86,7 @@ describe('CLI commands', () => {
       const specDir = join(tmpDir, 'system');
       const result = await parseSpecDirectory(specDir);
       expect(result.specs).not.toBeNull();
-      const output = compileCapabilities(result.specs!, '/tmp/gen');
+      const output = compileCapabilities(result.specs!);
       expect(output.files.length).toBeGreaterThan(0);
     });
   });

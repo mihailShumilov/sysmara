@@ -50,7 +50,7 @@ Capabilities are the unit of work in SysMARA. Each capability (e.g., `create_use
 - **Test scaffolds** with cases derived from the spec
 - **Validation logic** based on field constraints
 
-Generated code is written to the `app/generated/` directory. Developers (human or AI) implement the business logic in capability files within `app/capabilities/`, while the framework manages the boilerplate.
+Generated code is written to the `app/generated/` directory. The **scaffold** step then generates starter implementation files in `app/` — entity interfaces in `app/entities/`, capability handlers in `app/capabilities/`, policy enforcers in `app/policies/`, invariant validators in `app/invariants/`, and service classes in `app/services/`. Scaffold files are written once and never overwritten, so developers (human or AI) can safely edit them.
 
 ### Change Protocol
 
@@ -93,7 +93,7 @@ This creates the canonical project structure with example specs for a `users` mo
 sysmara build
 ```
 
-Parses all specs, cross-validates references, builds the system graph and map, compiles capabilities, and runs diagnostics.
+Parses all specs, cross-validates references, builds the system graph and map, compiles capabilities, scaffolds starter implementation files in `app/`, and runs diagnostics.
 
 ### Run diagnostics
 
@@ -414,7 +414,7 @@ invariants:
     message: A user with this email already exists
 ```
 
-## v0.4.0 Status
+## v0.5.1 Status
 
 ### Production-Ready
 
@@ -424,12 +424,13 @@ invariants:
 - System map generation (AI-facing module index)
 - Diagnostics engine with 20+ validation checks
 - Capability compiler with route handler and test scaffold generation
+- **Scaffold generator** — starter entity/capability/policy/invariant/service files from specs
 - Module boundary enforcement
 - Invariant resolution engine
 - Safe edit zone validation
 - HTTP runtime with typed handlers
 - Change Plan Protocol with risk classification and impact analysis
-- CLI commands: init, add, build, graph, compile, diagnose, doctor, explain, impact, plan, check boundaries, db, flow
+- CLI commands: init, add, build, graph, compile, scaffold, diagnose, doctor, explain, impact, plan, check boundaries, db, flow
 - Database adapter interface and registry
 - Prisma adapter (schema + repository generation)
 - Drizzle adapter (TypeScript-first schema)
@@ -499,6 +500,9 @@ sysmara db generate    # generate schema from entity specs
 sysmara db migrate     # create migration file
 sysmara db status      # show migration status
 
+# Generate starter app/ implementation files from specs (skip existing)
+sysmara scaffold
+
 # Flow execution
 sysmara flow list                        # list all flows with step counts
 sysmara flow validate <name>             # validate a flow
@@ -530,6 +534,8 @@ import {
   FlowExecutor,
   FlowExecutionLog,
   evaluateCondition,
+  // Scaffold
+  scaffoldSpecs,
   // Database
   SysmaraORM,
   SysmaraRepository,
@@ -552,6 +558,10 @@ const map = buildSystemMap(specs);
 
 // Compile capabilities
 const output = compileCapabilities(specs);
+
+// Scaffold starter implementation files
+const scaffold = scaffoldSpecs(specs);
+// scaffold.files → entities/*.ts, capabilities/*.ts, policies/*.ts, etc.
 
 // Run diagnostics
 const report = runDiagnostics(specs);

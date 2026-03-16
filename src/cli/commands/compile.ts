@@ -66,7 +66,7 @@ export async function commandCompile(cwd: string, config: SysmaraConfig, jsonMod
   }
 
   const specs = result.specs;
-  const compiled = compileCapabilities(specs, generatedDir);
+  const compiled = compileCapabilities(specs);
 
   await ensureDir(generatedDir);
   for (const file of compiled.files) {

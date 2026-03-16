@@ -12,6 +12,7 @@ import { buildSystemGraph, buildSystemMap } from '../../graph/index.js';
 import { compileCapabilities } from '../../compiler/index.js';
 import { runDiagnostics, formatDiagnosticsTerminal } from '../../diagnostics/index.js';
 import type { SysmaraConfig } from '../../types/index.js';
+import { scaffoldSpecs } from '../../scaffold/index.js';
 import { header, success, error, info } from '../format.js';
 
 /**
@@ -118,7 +119,7 @@ export async function commandBuild(cwd: string, config: SysmaraConfig, jsonMode:
 
   // 4. Compile capabilities
   if (!jsonMode) console.log('\n  Compiling capabilities...');
-  const compiled = compileCapabilities(specs, generatedDir);
+  const compiled = compileCapabilities(specs);
   if (!jsonMode) console.log(info(`Generated ${compiled.files.length} file(s)`));
 
   await ensureDir(generatedDir);
@@ -132,7 +133,37 @@ export async function commandBuild(cwd: string, config: SysmaraConfig, jsonMode:
     JSON.stringify(compiled.manifest, null, 2),
   );
 
-  // 5. Run diagnostics
+  // 5. Scaffold app/ implementation stubs (skip existing files)
+  if (!jsonMode) console.log('\n  Scaffolding app/ stubs...');
+  const appDir = path.resolve(cwd, config.appDir);
+  const scaffold = scaffoldSpecs(specs);
+  let scaffoldWritten = 0;
+  let scaffoldSkipped = 0;
+
+  for (const file of scaffold.files) {
+    const absolutePath = path.join(appDir, file.path);
+    let exists = false;
+    try {
+      await fs.stat(absolutePath);
+      exists = true;
+    } catch {
+      // file does not exist — will be created
+    }
+
+    if (exists) {
+      scaffoldSkipped++;
+      continue;
+    }
+
+    await writeFile(absolutePath, file.content);
+    scaffoldWritten++;
+  }
+
+  if (!jsonMode) {
+    console.log(info(`Scaffold: ${scaffoldWritten} written, ${scaffoldSkipped} skipped (already exist)`));
+  }
+
+  // 6. Run diagnostics
   if (!jsonMode) console.log('\n  Running diagnostics...');
   const report = runDiagnostics(specs, compiled.manifest);
 

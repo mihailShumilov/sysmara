@@ -22,6 +22,7 @@ import { commandPlanCreate, commandPlanShow } from './commands/plan.js';
 import { commandCheckBoundaries } from './commands/check.js';
 import { commandDbGenerate, commandDbMigrate, commandDbStatus } from './commands/db.js';
 import { commandFlowList, commandFlowValidate, commandFlowRun, commandFlowLog } from './commands/flow.js';
+import { commandScaffold } from './commands/scaffold.js';
 
 /** Current CLI version string, displayed by `--version`. */
 const VERSION = '0.4.0';
@@ -56,6 +57,7 @@ Commands:
   flow validate <name>         Validate a flow (check capabilities exist)
   flow run <name> --input <j>  Execute a flow with JSON input
   flow log                     Show execution log summary
+  scaffold                     Generate starter app/ files from specs (skip existing)
   help                         Show this help
 
 Options:
@@ -239,6 +241,12 @@ async function main(): Promise<void> {
           console.error('Usage: sysmara db <generate|migrate|status>');
           process.exit(1);
         }
+        break;
+      }
+
+      case 'scaffold': {
+        const config = resolveConfig(path.join(cwd, 'sysmara.config.yaml'));
+        await commandScaffold(cwd, config, jsonMode);
         break;
       }
 
