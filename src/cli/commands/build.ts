@@ -15,27 +15,8 @@ import type { SysmaraConfig } from '../../types/index.js';
 import { scaffoldSpecs } from '../../scaffold/index.js';
 import { getAdapter } from '../../database/index.js';
 import type { AdapterName } from '../../database/index.js';
+import { ensureDir, writeFile } from '../fs-utils.js';
 import { header, success, error, info } from '../format.js';
-
-/**
- * Creates a directory (and any missing parent directories) if it does not already exist.
- *
- * @param dirPath - Absolute path of the directory to create.
- */
-async function ensureDir(dirPath: string): Promise<void> {
-  await fs.mkdir(dirPath, { recursive: true });
-}
-
-/**
- * Writes a UTF-8 text file, creating any missing parent directories first.
- *
- * @param filePath - Absolute path of the file to write.
- * @param content - String content to write to the file.
- */
-async function writeFile(filePath: string, content: string): Promise<void> {
-  await ensureDir(path.dirname(filePath));
-  await fs.writeFile(filePath, content, 'utf-8');
-}
 
 /**
  * Executes the full SysMARA build pipeline:

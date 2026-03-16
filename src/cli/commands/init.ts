@@ -5,10 +5,13 @@
  * Docker environment, and environment files.
  */
 
-import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { success } from '../format.js';
+import { ensureDir, writeFile } from '../fs-utils.js';
 import type { DatabaseProvider } from '../../database/adapter.js';
+import type { AdapterName } from '../../database/adapter.js';
+import type { GeneratedTextFile } from '../../generators/types.js';
+import { requiresDocker } from '../../generators/types.js';
 import {
   generateDockerCompose,
   generateDockerfile,
@@ -26,17 +29,16 @@ import {
  */
 export interface InitOptions {
   db: DatabaseProvider;
-  orm: 'sysmara-orm' | 'prisma' | 'drizzle' | 'typeorm';
+  orm: AdapterName;
   noImplement?: boolean;
 }
 
-async function ensureDir(dirPath: string): Promise<void> {
-  await fs.mkdir(dirPath, { recursive: true });
-}
-
-async function writeFile(filePath: string, content: string): Promise<void> {
-  await ensureDir(path.dirname(filePath));
-  await fs.writeFile(filePath, content, 'utf-8');
+/**
+ * Writes a generated file to disk and logs its path.
+ */
+async function writeGenerated(cwd: string, file: GeneratedTextFile): Promise<void> {
+  await writeFile(path.join(cwd, file.path), file.content);
+  console.log(`  created ${file.path}`);
 }
 
 /**
@@ -280,50 +282,29 @@ database:
   await writeFile(path.join(cwd, 'sysmara.config.yaml'), configYaml);
   console.log('  created sysmara.config.yaml');
 
-  // 4. Generate environment files
-  const envExample = generateEnvExample(db);
-  await writeFile(path.join(cwd, envExample.path), envExample.content);
-  console.log(`  created ${envExample.path}`);
-
-  const envLocal = generateEnvLocal(db);
-  await writeFile(path.join(cwd, envLocal.path), envLocal.content);
-  console.log(`  created ${envLocal.path}`);
-
-  // 5. Generate Docker files
-  const compose = generateDockerCompose(db);
-  await writeFile(path.join(cwd, compose.path), compose.content);
-  console.log(`  created ${compose.path}`);
-
-  const dockerfile = generateDockerfile();
-  await writeFile(path.join(cwd, dockerfile.path), dockerfile.content);
-  console.log(`  created ${dockerfile.path}`);
-
-  const dockerignore = generateDockerignore();
-  await writeFile(path.join(cwd, dockerignore.path), dockerignore.content);
-  console.log(`  created ${dockerignore.path}`);
-
-  // 6. Generate .gitignore
-  const gitignore = generateGitignore(db);
-  await writeFile(path.join(cwd, gitignore.path), gitignore.content);
-  console.log(`  created ${gitignore.path}`);
-
-  // 7. Generate package.json with npm scripts
+  // 4. Generate project files
   const projectName = path.basename(cwd);
-  const packageJson = generatePackageJson(projectName, db);
-  await writeFile(path.join(cwd, packageJson.path), packageJson.content);
-  console.log(`  created ${packageJson.path}`);
+  const generatedFiles = [
+    generateEnvExample(db),
+    generateEnvLocal(db),
+    generateDockerCompose(db),
+    generateDockerfile(),
+    generateDockerignore(),
+    generateGitignore(db),
+    generatePackageJson(projectName, db),
+    generateReadme(projectName, db, orm),
+  ];
 
-  // 8. Generate README.md
-  const readme = generateReadme(projectName, db, orm);
-  await writeFile(path.join(cwd, readme.path), readme.content);
-  console.log(`  created ${readme.path}`);
+  for (const file of generatedFiles) {
+    await writeGenerated(cwd, file);
+  }
 
-  // 9. Print next steps
+  // 5. Print next steps
   console.log('');
   console.log(success('Project initialized successfully.'));
   console.log('');
   console.log('Next steps:');
-  if (db !== 'sqlite') {
+  if (requiresDocker(db)) {
     console.log('  docker compose up -d  — Start local database');
   }
   console.log('  sysmara build         — Validate specs, compile, scaffold, generate schema');

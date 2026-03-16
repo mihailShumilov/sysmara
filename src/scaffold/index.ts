@@ -6,4 +6,4 @@
 
 export { scaffoldSpecs } from './scaffolder.js';
 export type { ScaffoldOutput, ScaffoldFile, ScaffoldOptions } from './scaffolder.js';
-export { toPascalCase, toCamelCase, mapFieldType } from './type-utils.js';
+export { toPascalCase, toCamelCase, mapFieldType, renderFieldLines } from './type-utils.js';

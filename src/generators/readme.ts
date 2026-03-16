@@ -3,12 +3,9 @@
  * Generates a project-specific README.md for initialized SysMARA projects.
  */
 
+import type { GeneratedTextFile } from './types.js';
 import type { DatabaseProvider } from '../database/adapter.js';
-
-interface GeneratedTextFile {
-  path: string;
-  content: string;
-}
+import { requiresDocker } from './types.js';
 
 /**
  * Generates a README.md with project setup instructions, commands, and structure.
@@ -18,7 +15,7 @@ export function generateReadme(
   provider: DatabaseProvider,
   orm: string,
 ): GeneratedTextFile {
-  const dbSetup = provider !== 'sqlite'
+  const dbSetup = requiresDocker(provider)
     ? `### Start the database
 
 \`\`\`bash
@@ -29,7 +26,7 @@ This starts a local ${provider === 'postgresql' ? 'PostgreSQL' : 'MySQL'} instan
 `
     : '';
 
-  const dbCommands = provider !== 'sqlite'
+  const dbCommands = requiresDocker(provider)
     ? `| \`npm run db:start\` | Start the database container |
 | \`npm run db:stop\` | Stop the database container |
 | \`npm run db:logs\` | Stream database logs |
@@ -62,7 +59,7 @@ This runs the full SysMARA pipeline: validates specs, builds the system graph, c
 npm run dev
 \`\`\`
 
-${provider !== 'sqlite' ? 'Starts the database (if not running), builds, and launches the server with file watching.\n' : 'Builds and launches the server with file watching.\n'}
+${requiresDocker(provider) ? 'Starts the database (if not running), builds, and launches the server with file watching.\n' : 'Builds and launches the server with file watching.\n'}
 ### Start production
 
 \`\`\`bash

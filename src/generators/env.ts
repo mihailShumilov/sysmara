@@ -4,12 +4,8 @@
  * the selected database provider and adapter.
  */
 
+import type { GeneratedTextFile } from './types.js';
 import type { DatabaseProvider } from '../database/adapter.js';
-
-interface GeneratedTextFile {
-  path: string;
-  content: string;
-}
 
 /**
  * Returns the default local development connection string for a database provider.

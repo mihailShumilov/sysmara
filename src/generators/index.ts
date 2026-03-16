@@ -3,6 +3,8 @@
  * File generators for Docker, environment, gitignore, package.json, and README files.
  */
 
+export type { GeneratedTextFile } from './types.js';
+export { requiresDocker } from './types.js';
 export { generateDockerCompose, generateDockerfile, generateDockerignore } from './docker.js';
 export { generateEnvExample, generateEnvLocal, connectionString } from './env.js';
 export { generateGitignore } from './gitignore.js';

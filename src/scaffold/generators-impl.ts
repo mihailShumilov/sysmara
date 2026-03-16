@@ -13,7 +13,7 @@ import type {
   ModuleSpec,
   SystemSpecs,
 } from '../types/index.js';
-import { toPascalCase, toCamelCase, mapFieldType } from './type-utils.js';
+import { toPascalCase, toCamelCase, mapFieldType, renderFieldLines } from './type-utils.js';
 
 /**
  * Infers the CRUD operation type from a capability name.
@@ -33,15 +33,7 @@ function inferOperation(name: string): 'create' | 'read' | 'update' | 'delete' |
  */
 export function generateEntityImpl(entity: EntitySpec): string {
   const pascal = toPascalCase(entity.name);
-
-  const fieldLines = entity.fields
-    .map((f) => {
-      const optional = f.required ? '' : '?';
-      const tsType = mapFieldType(f.type);
-      const desc = f.description ? `  /** ${f.description} */\n` : '';
-      return `${desc}  ${f.name}${optional}: ${tsType};`;
-    })
-    .join('\n');
+  const fieldLines = renderFieldLines(entity.fields);
 
   // Generate detailed validation with type checks
   const validationLines = entity.fields
@@ -213,20 +205,19 @@ import { SysmaraORM } from '@sysmara/core';
 import type { ${pascal}Input, ${pascal}Output } from '../generated/routes/${capability.name}.js';
 ${allImports}
 
-// Initialize ORM (in production, share a single instance across handlers)
-let orm: SysmaraORM;
+// Shared ORM instance (set once at app startup)
+let _orm: SysmaraORM;
 
-function getOrm(ctx: HandlerContext): SysmaraORM {
-  if (!orm) {
-    // ORM should be initialized at app startup and injected via context
-    throw new Error('ORM not initialized. Set up SysmaraORM at app startup.');
+function getOrm(): SysmaraORM {
+  if (!_orm) {
+    throw new Error('ORM not initialized. Call setOrm() at app startup.');
   }
-  return orm;
+  return _orm;
 }
 
 /** Set the shared ORM instance (call once at app startup). */
 export function setOrm(instance: SysmaraORM): void {
-  orm = instance;
+  _orm = instance;
 }
 
 /**
@@ -239,7 +230,7 @@ export function setOrm(instance: SysmaraORM): void {
  */
 export async function handle${pascal}(ctx: HandlerContext): Promise<${pascal}Output> {
   const input = ctx.body as ${pascal}Input;
-  const orm = getOrm(ctx);
+  const orm = getOrm();
 
 ${body}
 }

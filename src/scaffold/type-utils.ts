@@ -73,3 +73,20 @@ export function mapFieldType(specType: string): string {
       return 'unknown';
   }
 }
+
+/**
+ * Renders entity fields as TypeScript interface property declarations.
+ *
+ * @param fields - The entity field definitions to render.
+ * @returns A newline-joined string of TypeScript interface property lines.
+ */
+export function renderFieldLines(fields: Array<{ name: string; type: string; required: boolean; description?: string }>): string {
+  return fields
+    .map((f) => {
+      const optional = f.required ? '' : '?';
+      const tsType = mapFieldType(f.type);
+      const desc = f.description ? `  /** ${f.description} */\n` : '';
+      return `${desc}  ${f.name}${optional}: ${tsType};`;
+    })
+    .join('\n');
+}

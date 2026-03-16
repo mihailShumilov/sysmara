@@ -4,12 +4,9 @@
  * based on the selected database provider.
  */
 
+import type { GeneratedTextFile } from './types.js';
 import type { DatabaseProvider } from '../database/adapter.js';
-
-interface GeneratedTextFile {
-  path: string;
-  content: string;
-}
+import { requiresDocker } from './types.js';
 
 function dbService(provider: DatabaseProvider): string {
   if (provider === 'postgresql') {
@@ -59,7 +56,7 @@ function dbService(provider: DatabaseProvider): string {
  * Includes the database service for PostgreSQL/MySQL, or just the app for SQLite.
  */
 export function generateDockerCompose(provider: DatabaseProvider): GeneratedTextFile {
-  const hasDb = provider !== 'sqlite';
+  const hasDb = requiresDocker(provider);
   const dbBlock = dbService(provider);
   const dependsOn = hasDb ? `\n    depends_on:\n      db:\n        condition: service_healthy` : '';
   const volumesBlock = hasDb ? `\nvolumes:\n  db_data:` : '';

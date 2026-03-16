@@ -3,12 +3,9 @@
  * Generates package.json with SysMARA npm scripts for the initialized project.
  */
 
+import type { GeneratedTextFile } from './types.js';
 import type { DatabaseProvider } from '../database/adapter.js';
-
-interface GeneratedTextFile {
-  path: string;
-  content: string;
-}
+import { requiresDocker } from './types.js';
 
 /**
  * Generates a project package.json with SysMARA scripts, dev/prod commands,
@@ -18,7 +15,7 @@ export function generatePackageJson(
   projectName: string,
   provider: DatabaseProvider,
 ): GeneratedTextFile {
-  const dbUp = provider !== 'sqlite' ? 'docker compose up -d && ' : '';
+  const dbUp = requiresDocker(provider) ? 'docker compose up -d && ' : '';
 
   const content = JSON.stringify({
     name: projectName,
@@ -42,7 +39,7 @@ export function generatePackageJson(
       // Dev and prod
       dev: `${dbUp}sysmara build && node --watch app/server.js`,
       start: 'NODE_ENV=production node app/server.js',
-      ...(provider !== 'sqlite' ? {
+      ...(requiresDocker(provider) ? {
         'db:start': 'docker compose up -d',
         'db:stop': 'docker compose down',
         'db:logs': 'docker compose logs -f db',

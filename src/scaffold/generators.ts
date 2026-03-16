@@ -12,7 +12,7 @@ import type {
   ModuleSpec,
   SystemSpecs,
 } from '../types/index.js';
-import { toPascalCase, toCamelCase, mapFieldType } from './type-utils.js';
+import { toPascalCase, toCamelCase, renderFieldLines } from './type-utils.js';
 
 /**
  * Generates a starter TypeScript entity file with an interface, type alias,
@@ -20,15 +20,7 @@ import { toPascalCase, toCamelCase, mapFieldType } from './type-utils.js';
  */
 export function generateEntityStub(entity: EntitySpec): string {
   const pascal = toPascalCase(entity.name);
-
-  const fieldLines = entity.fields
-    .map((f) => {
-      const optional = f.required ? '' : '?';
-      const tsType = mapFieldType(f.type);
-      const desc = f.description ? `  /** ${f.description} */\n` : '';
-      return `${desc}  ${f.name}${optional}: ${tsType};`;
-    })
-    .join('\n');
+  const fieldLines = renderFieldLines(entity.fields);
 
   return `// ============================================================
 // SCAFFOLD: entity:${entity.name}

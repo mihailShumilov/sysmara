@@ -3,12 +3,8 @@
  * Generates a comprehensive .gitignore file for SysMARA projects.
  */
 
+import type { GeneratedTextFile } from './types.js';
 import type { DatabaseProvider } from '../database/adapter.js';
-
-interface GeneratedTextFile {
-  path: string;
-  content: string;
-}
 
 /**
  * Generates .gitignore with entries for Node.js, SysMARA framework,

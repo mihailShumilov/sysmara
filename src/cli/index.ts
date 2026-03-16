@@ -38,7 +38,7 @@ sysmara v${VERSION} — SysMARA: Model / Architecture / Runtime Abstraction for 
 Usage: sysmara <command> [options]
 
 Commands:
-  init [--db <pg|mysql|sqlite>] [--orm <sysmara-orm|prisma|drizzle|typeorm>] [--no-implement]
+  init [--db <postgresql|mysql|sqlite>] [--orm <sysmara-orm|prisma|drizzle|typeorm>] [--no-implement]
                                Create a new project with DB, Docker, env, package.json, README
   add <type> <name>            Add entity, capability, policy, invariant, module, or flow
   validate                     Validate all specs
