@@ -38,8 +38,8 @@ sysmara v${VERSION} — SysMARA: Model / Architecture / Runtime Abstraction for 
 Usage: sysmara <command> [options]
 
 Commands:
-  init [--db <pg|mysql|sqlite>] [--orm <sysmara-orm|prisma|drizzle|typeorm>]
-                               Create a new SysMARA project with database, Docker, and env files
+  init [--db <pg|mysql|sqlite>] [--orm <sysmara-orm|prisma|drizzle|typeorm>] [--no-implement]
+                               Create a new project with DB, Docker, env, package.json, README
   add <type> <name>            Add entity, capability, policy, invariant, module, or flow
   validate                     Validate all specs
   build                        Full build: validate, graph, compile, diagnose
@@ -86,6 +86,8 @@ function parseFlags(args: string[]): { positional: string[]; json: boolean; flag
     } else if (arg.startsWith('--') && arg.includes('=')) {
       const [key, ...rest] = arg.slice(2).split('=');
       flags[key!] = rest.join('=');
+    } else if (arg.startsWith('--no-')) {
+      flags[arg.slice(2)] = 'true';
     } else if (arg.startsWith('--') && i + 1 < args.length && !args[i + 1]!.startsWith('--')) {
       flags[arg.slice(2)] = args[i + 1]!;
       i++;
@@ -124,7 +126,8 @@ async function main(): Promise<void> {
       case 'init': {
         const db = (flags.db ?? 'postgresql') as 'postgresql' | 'mysql' | 'sqlite';
         const orm = (flags.orm ?? 'sysmara-orm') as 'sysmara-orm' | 'prisma' | 'drizzle' | 'typeorm';
-        await commandInit(cwd, { db, orm });
+        const noImplement = flags['no-implement'] !== undefined;
+        await commandInit(cwd, { db, orm, noImplement });
         break;
       }
 
@@ -149,7 +152,8 @@ async function main(): Promise<void> {
 
       case 'build': {
         const config = resolveConfig(path.join(cwd, 'sysmara.config.yaml'));
-        await commandBuild(cwd, config, jsonMode);
+        const noImpl = flags['no-implement'] !== undefined;
+        await commandBuild(cwd, config, jsonMode, { implement: !noImpl });
         break;
       }
 

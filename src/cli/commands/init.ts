@@ -16,6 +16,8 @@ import {
   generateEnvExample,
   generateEnvLocal,
   generateGitignore,
+  generatePackageJson,
+  generateReadme,
   connectionString,
 } from '../../generators/index.js';
 
@@ -25,6 +27,7 @@ import {
 export interface InitOptions {
   db: DatabaseProvider;
   orm: 'sysmara-orm' | 'prisma' | 'drizzle' | 'typeorm';
+  noImplement?: boolean;
 }
 
 async function ensureDir(dirPath: string): Promise<void> {
@@ -304,7 +307,18 @@ database:
   await writeFile(path.join(cwd, gitignore.path), gitignore.content);
   console.log(`  created ${gitignore.path}`);
 
-  // 7. Print next steps
+  // 7. Generate package.json with npm scripts
+  const projectName = path.basename(cwd);
+  const packageJson = generatePackageJson(projectName, db);
+  await writeFile(path.join(cwd, packageJson.path), packageJson.content);
+  console.log(`  created ${packageJson.path}`);
+
+  // 8. Generate README.md
+  const readme = generateReadme(projectName, db, orm);
+  await writeFile(path.join(cwd, readme.path), readme.content);
+  console.log(`  created ${readme.path}`);
+
+  // 9. Print next steps
   console.log('');
   console.log(success('Project initialized successfully.'));
   console.log('');
