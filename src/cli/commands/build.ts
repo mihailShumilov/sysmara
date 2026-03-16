@@ -52,7 +52,7 @@ async function writeFile(filePath: string, content: string): Promise<void> {
  * @param jsonMode - When `true`, outputs machine-readable JSON instead of human-friendly text.
  * @throws Exits the process with code 1 if parsing fails or diagnostics contain errors.
  */
-export async function commandBuild(cwd: string, config: SysmaraConfig, jsonMode: boolean): Promise<void> {
+export async function commandBuild(cwd: string, config: SysmaraConfig, jsonMode: boolean, options?: { implement?: boolean }): Promise<void> {
   const specDir = path.resolve(cwd, config.specDir);
   const frameworkDir = path.resolve(cwd, config.frameworkDir);
   const generatedDir = path.resolve(cwd, config.generatedDir);
@@ -138,7 +138,8 @@ export async function commandBuild(cwd: string, config: SysmaraConfig, jsonMode:
   // 5. Scaffold app/ implementation stubs (skip existing files)
   if (!jsonMode) console.log('\n  Scaffolding app/ stubs...');
   const appDir = path.resolve(cwd, config.appDir);
-  const scaffold = scaffoldSpecs(specs);
+  const implement = options?.implement ?? true;
+  const scaffold = scaffoldSpecs(specs, { implement });
   let scaffoldWritten = 0;
   let scaffoldSkipped = 0;
 

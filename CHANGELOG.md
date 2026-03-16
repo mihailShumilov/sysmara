@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Implement mode** (`--no-implement` flag): scaffold generators now produce working ORM-based implementations by default instead of TODO stubs. Pass `--no-implement` to `sysmara build` or `sysmara init` to get the old stub behavior
+  - Capability handlers: CRUD logic via SysmaraORM repository (create/read/update/delete/list inferred from capability name)
+  - Policy enforcers: real condition checks from spec conditions (role-based, equality, membership)
+  - Invariant validators: field checks inferred from invariant names and rules (uniqueness, not-empty, range)
+  - Service classes: ORM-injected constructor with real repository calls per capability
+  - Entity validators: type-checked validation with constraint enforcement (enum, min/max, pattern)
+- **Package.json generation**: `sysmara init` now creates `package.json` with npm scripts: `build`, `validate`, `dev` (starts DB + builds + watches), `start` (production), `db:start/stop/logs`, and all `sysmara:*` commands
+- **README.md generation**: init creates a project-specific README with setup instructions, available commands table, project structure, and configuration details
+- 19 new tests for implement-mode generators, package.json, and README generation
+
 ## [0.6.0] — 2026-03-16
 
 ### Added

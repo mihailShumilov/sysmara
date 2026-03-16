@@ -12,6 +12,13 @@ import {
   generateInvariantStub,
   generateServiceStub,
 } from './generators.js';
+import {
+  generateEntityImpl,
+  generateCapabilityImpl,
+  generatePolicyImpl,
+  generateInvariantImpl,
+  generateServiceImpl,
+} from './generators-impl.js';
 
 /**
  * A single scaffold file to be written to the app/ directory.
@@ -36,19 +43,36 @@ export interface ScaffoldOutput {
 }
 
 /**
+ * Options for scaffold generation.
+ *
+ * @property implement - When true, generate working implementations instead of TODO stubs.
+ */
+export interface ScaffoldOptions {
+  implement?: boolean;
+}
+
+/**
  * Generates starter TypeScript implementation files for all entities, capabilities,
  * policies, invariants, and module services defined in the system specs.
  *
  * @param specs - The parsed system specifications.
+ * @param options - Generation options. When `implement` is true, generates real logic.
  * @returns A {@link ScaffoldOutput} containing all files to write.
  */
-export function scaffoldSpecs(specs: SystemSpecs): ScaffoldOutput {
+export function scaffoldSpecs(specs: SystemSpecs, options: ScaffoldOptions = {}): ScaffoldOutput {
   const files: ScaffoldFile[] = [];
+  const impl = options.implement ?? false;
+
+  const genEntity = impl ? generateEntityImpl : generateEntityStub;
+  const genCapability = impl ? generateCapabilityImpl : generateCapabilityStub;
+  const genPolicy = impl ? generatePolicyImpl : generatePolicyStub;
+  const genInvariant = impl ? generateInvariantImpl : generateInvariantStub;
+  const genService = impl ? generateServiceImpl : generateServiceStub;
 
   for (const entity of specs.entities) {
     files.push({
       path: `entities/${entity.name}.ts`,
-      content: generateEntityStub(entity),
+      content: genEntity(entity),
       source: `entity:${entity.name}`,
     });
   }
@@ -56,7 +80,7 @@ export function scaffoldSpecs(specs: SystemSpecs): ScaffoldOutput {
   for (const capability of specs.capabilities) {
     files.push({
       path: `capabilities/${capability.name}.ts`,
-      content: generateCapabilityStub(capability, specs),
+      content: genCapability(capability, specs),
       source: `capability:${capability.name}`,
     });
   }
@@ -64,7 +88,7 @@ export function scaffoldSpecs(specs: SystemSpecs): ScaffoldOutput {
   for (const policy of specs.policies) {
     files.push({
       path: `policies/${policy.name}.ts`,
-      content: generatePolicyStub(policy),
+      content: genPolicy(policy),
       source: `policy:${policy.name}`,
     });
   }
@@ -72,7 +96,7 @@ export function scaffoldSpecs(specs: SystemSpecs): ScaffoldOutput {
   for (const invariant of specs.invariants) {
     files.push({
       path: `invariants/${invariant.name}.ts`,
-      content: generateInvariantStub(invariant),
+      content: genInvariant(invariant),
       source: `invariant:${invariant.name}`,
     });
   }
@@ -80,7 +104,7 @@ export function scaffoldSpecs(specs: SystemSpecs): ScaffoldOutput {
   for (const mod of specs.modules) {
     files.push({
       path: `services/${mod.name}.ts`,
-      content: generateServiceStub(mod, specs),
+      content: genService(mod, specs),
       source: `module:${mod.name}`,
     });
   }
