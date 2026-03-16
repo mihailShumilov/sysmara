@@ -15,14 +15,34 @@ npm install -g @sysmara/core
 
 ```bash
 mkdir my-project && cd my-project
-npx @sysmara/core init
+npx @sysmara/core init --db postgresql --orm sysmara-orm
 ```
 
+Available options:
+- `--db`: `postgresql` (default), `mysql`, `sqlite`
+- `--orm`: `sysmara-orm` (default), `prisma`, `drizzle`, `typeorm`
+
 This creates:
-- `sysmara.config.yaml` — project configuration
+- `sysmara.config.yaml` — project configuration with database settings
 - `system/` — YAML spec directory (entities, capabilities, policies, invariants, modules, flows)
-- `app/` — application code directory
+- `app/` — application code directory (includes `app/database/migrations/`)
 - `.framework/` — generated framework artifacts
+- `docker-compose.yml` — local database container (PostgreSQL/MySQL)
+- `Dockerfile` — production multi-stage build
+- `.dockerignore` — Docker build context filter
+- `.env.example` — documented environment variable template
+- `.env.local` — local development environment (gitignored)
+- `.gitignore` — comprehensive ignore rules
+
+### Step 1.5: Start the Local Database
+
+```bash
+# Start the database container (skip for SQLite)
+docker compose up -d
+```
+
+This starts a local database with default credentials (`sysmara:sysmara`).
+The connection string is pre-configured in `.env.local` and `sysmara.config.yaml`.
 
 Delete the example specs that `init` creates. You will write your own.
 
@@ -274,7 +294,11 @@ This runs the full pipeline:
 2. Cross-validate references
 3. Build system graph (`system-graph.json`) and system map (`system-map.json`)
 4. Compile capabilities → generate route handlers, test scaffolds, metadata in `app/generated/`
-5. Run diagnostics
+5. Scaffold starter implementation files in `app/` (entities, capabilities, policies, invariants, services)
+6. Generate database schema in `app/database/` (if database is configured in `sysmara.config.yaml`)
+7. Run diagnostics
+
+The database schema is auto-generated from your entity specs — no separate `sysmara db generate` call needed during bootstrap.
 
 ### Step 11: Implement Capability Logic
 
@@ -389,6 +413,8 @@ Before reporting completion, verify:
 - [ ] No circular module dependencies
 - [ ] Module `entities` and `capabilities` lists match what's declared in the spec files
 - [ ] Flow triggers and step actions reference existing capabilities
+- [ ] Database container starts (`docker compose up -d`) — skip for SQLite
+- [ ] Database schema generated in `app/database/`
 - [ ] Tests pass
 - [ ] Server starts and `/health` returns 200
 
@@ -419,7 +445,8 @@ Capability input/output fields: `string`, `number`, `boolean`, `date`, `object`,
 ## Quick Reference: All CLI Commands
 
 ```bash
-sysmara init                          # Create project structure
+sysmara init [--db pg|mysql|sqlite] [--orm sysmara-orm|prisma|drizzle|typeorm]
+                                     # Create project with DB, Docker, and env files
 sysmara validate                      # Validate all specs
 sysmara build                         # Full build pipeline
 sysmara compile                       # Compile capabilities only

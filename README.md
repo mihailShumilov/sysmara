@@ -82,18 +82,21 @@ This protocol ensures that changes are never made in isolation. Every modificati
 ### Initialize a new project
 
 ```bash
-npx @sysmara/core init
+npx @sysmara/core init --db postgresql --orm sysmara-orm
 ```
 
-This creates the canonical project structure with example specs for a `users` module.
+This creates the full project structure: YAML specs, database config, Docker environment (`docker-compose.yml`, `Dockerfile`), environment files (`.env.example`, `.env.local`), and `.gitignore`.
 
-### Build and validate
+Options: `--db` (postgresql/mysql/sqlite), `--orm` (sysmara-orm/prisma/drizzle/typeorm).
+
+### Start the database and build
 
 ```bash
-sysmara build
+docker compose up -d    # Start local database
+sysmara build           # Full build pipeline
 ```
 
-Parses all specs, cross-validates references, builds the system graph and map, compiles capabilities, scaffolds starter implementation files in `app/`, and runs diagnostics.
+Parses all specs, cross-validates references, builds the system graph and map, compiles capabilities, scaffolds starter implementation files in `app/`, generates database schema, and runs diagnostics.
 
 ### Run diagnostics
 

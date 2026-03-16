@@ -38,7 +38,8 @@ sysmara v${VERSION} — SysMARA: Model / Architecture / Runtime Abstraction for 
 Usage: sysmara <command> [options]
 
 Commands:
-  init                         Create a new SysMARA project
+  init [--db <pg|mysql|sqlite>] [--orm <sysmara-orm|prisma|drizzle|typeorm>]
+                               Create a new SysMARA project with database, Docker, and env files
   add <type> <name>            Add entity, capability, policy, invariant, module, or flow
   validate                     Validate all specs
   build                        Full build: validate, graph, compile, diagnose
@@ -73,19 +74,27 @@ Options:
  * @returns An object containing the ordered `positional` arguments and a `json` flag
  *          indicating whether `--json` was present.
  */
-function parseFlags(args: string[]): { positional: string[]; json: boolean } {
+function parseFlags(args: string[]): { positional: string[]; json: boolean; flags: Record<string, string> } {
   const positional: string[] = [];
+  const flags: Record<string, string> = {};
   let json = false;
 
-  for (const arg of args) {
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i]!;
     if (arg === '--json') {
       json = true;
+    } else if (arg.startsWith('--') && arg.includes('=')) {
+      const [key, ...rest] = arg.slice(2).split('=');
+      flags[key!] = rest.join('=');
+    } else if (arg.startsWith('--') && i + 1 < args.length && !args[i + 1]!.startsWith('--')) {
+      flags[arg.slice(2)] = args[i + 1]!;
+      i++;
     } else if (!arg.startsWith('--')) {
       positional.push(arg);
     }
   }
 
-  return { positional, json };
+  return { positional, json, flags };
 }
 
 /**
@@ -108,13 +117,16 @@ async function main(): Promise<void> {
   }
 
   const cwd = process.cwd();
-  const { positional, json: jsonMode } = parseFlags(rawArgs);
+  const { positional, json: jsonMode, flags } = parseFlags(rawArgs);
 
   try {
     switch (positional[0]) {
-      case 'init':
-        await commandInit(cwd);
+      case 'init': {
+        const db = (flags.db ?? 'postgresql') as 'postgresql' | 'mysql' | 'sqlite';
+        const orm = (flags.orm ?? 'sysmara-orm') as 'sysmara-orm' | 'prisma' | 'drizzle' | 'typeorm';
+        await commandInit(cwd, { db, orm });
         break;
+      }
 
       case 'add': {
         const type = positional[1];

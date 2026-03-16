@@ -1,44 +1,57 @@
 /**
  * @module cli/commands/init
  * CLI command that scaffolds a new SysMARA project by creating the standard
- * directory layout, starter spec YAML files, and a default `sysmara.config.yaml`.
+ * directory layout, starter spec YAML files, database configuration,
+ * Docker environment, and environment files.
  */
 
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { success } from '../format.js';
+import type { DatabaseProvider } from '../../database/adapter.js';
+import {
+  generateDockerCompose,
+  generateDockerfile,
+  generateDockerignore,
+  generateEnvExample,
+  generateEnvLocal,
+  generateGitignore,
+  connectionString,
+} from '../../generators/index.js';
 
 /**
- * Creates a directory (and any missing parent directories) if it does not already exist.
- *
- * @param dirPath - Absolute path of the directory to create.
+ * Options for the init command.
  */
+export interface InitOptions {
+  db: DatabaseProvider;
+  orm: 'sysmara-orm' | 'prisma' | 'drizzle' | 'typeorm';
+}
+
 async function ensureDir(dirPath: string): Promise<void> {
   await fs.mkdir(dirPath, { recursive: true });
 }
 
-/**
- * Writes a UTF-8 text file, creating any missing parent directories first.
- *
- * @param filePath - Absolute path of the file to write.
- * @param content - String content to write to the file.
- */
 async function writeFile(filePath: string, content: string): Promise<void> {
   await ensureDir(path.dirname(filePath));
   await fs.writeFile(filePath, content, 'utf-8');
 }
 
 /**
- * Initializes a new SysMARA project in the given directory.
- * Creates the standard directory structure (`app/`, `system/`, `.framework/`),
- * writes starter spec files (entities, capabilities, policies, invariants,
- * modules, flows, safe-edit-zones, glossary), and generates `sysmara.config.yaml`.
+ * Initializes a new SysMARA project with database, Docker, and environment support.
  *
  * @param cwd - Directory in which to create the project structure.
+ * @param options - Database provider and ORM adapter selection.
  */
-export async function commandInit(cwd: string): Promise<void> {
+export async function commandInit(
+  cwd: string,
+  options: InitOptions = { db: 'postgresql', orm: 'sysmara-orm' },
+): Promise<void> {
+  const { db, orm } = options;
   console.log('Initializing SysMARA project...\n');
+  console.log(`  Database: ${db}`);
+  console.log(`  ORM:      ${orm}\n`);
 
+  // 1. Create directory structure
   const appDirs = [
     'app/entities',
     'app/capabilities',
@@ -52,6 +65,7 @@ export async function commandInit(cwd: string): Promise<void> {
     'app/generated',
     'app/protected',
     'app/tests',
+    'app/database/migrations',
   ];
 
   for (const dir of appDirs) {
@@ -65,6 +79,7 @@ export async function commandInit(cwd: string): Promise<void> {
   await ensureDir(path.join(cwd, '.framework'));
   console.log('  created .framework/');
 
+  // 2. Write spec YAML files
   const entitiesYaml = `entities:
   - name: user
     description: A registered user in the system
@@ -241,6 +256,8 @@ export async function commandInit(cwd: string): Promise<void> {
     console.log(`  created ${filePath}`);
   }
 
+  // 3. Write sysmara.config.yaml with database section
+  const connStr = connectionString(db);
   const configYaml = `name: my-sysmara-app
 version: 0.0.1
 specDir: ./system
@@ -250,16 +267,52 @@ generatedDir: ./app/generated
 port: 3000
 host: 0.0.0.0
 logLevel: info
+database:
+  adapter: ${orm}
+  provider: ${db}
+  outputDir: ./app/database
+  connectionString: "${connStr}"
 `;
 
   await writeFile(path.join(cwd, 'sysmara.config.yaml'), configYaml);
   console.log('  created sysmara.config.yaml');
 
+  // 4. Generate environment files
+  const envExample = generateEnvExample(db);
+  await writeFile(path.join(cwd, envExample.path), envExample.content);
+  console.log(`  created ${envExample.path}`);
+
+  const envLocal = generateEnvLocal(db);
+  await writeFile(path.join(cwd, envLocal.path), envLocal.content);
+  console.log(`  created ${envLocal.path}`);
+
+  // 5. Generate Docker files
+  const compose = generateDockerCompose(db);
+  await writeFile(path.join(cwd, compose.path), compose.content);
+  console.log(`  created ${compose.path}`);
+
+  const dockerfile = generateDockerfile();
+  await writeFile(path.join(cwd, dockerfile.path), dockerfile.content);
+  console.log(`  created ${dockerfile.path}`);
+
+  const dockerignore = generateDockerignore();
+  await writeFile(path.join(cwd, dockerignore.path), dockerignore.content);
+  console.log(`  created ${dockerignore.path}`);
+
+  // 6. Generate .gitignore
+  const gitignore = generateGitignore(db);
+  await writeFile(path.join(cwd, gitignore.path), gitignore.content);
+  console.log(`  created ${gitignore.path}`);
+
+  // 7. Print next steps
   console.log('');
   console.log(success('Project initialized successfully.'));
   console.log('');
   console.log('Next steps:');
-  console.log('  sysmara build      — Validate specs and build system graph');
-  console.log('  sysmara validate   — Validate all specs');
-  console.log('  sysmara doctor     — Run comprehensive health check');
+  if (db !== 'sqlite') {
+    console.log('  docker compose up -d  — Start local database');
+  }
+  console.log('  sysmara build         — Validate specs, compile, scaffold, generate schema');
+  console.log('  sysmara validate      — Validate all specs');
+  console.log('  sysmara doctor        — Run comprehensive health check');
 }
