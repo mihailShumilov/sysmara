@@ -49,7 +49,7 @@ export function generatePackageJson(
       } : {}),
     },
     dependencies: {
-      '@sysmara/core': '^0.6.0',
+      '@sysmara/core': '^0.7.0',
     },
   }, null, 2) + '\n';
 
