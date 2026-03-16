@@ -13,6 +13,8 @@ import { compileCapabilities } from '../../compiler/index.js';
 import { runDiagnostics, formatDiagnosticsTerminal } from '../../diagnostics/index.js';
 import type { SysmaraConfig } from '../../types/index.js';
 import { scaffoldSpecs } from '../../scaffold/index.js';
+import { getAdapter } from '../../database/index.js';
+import type { AdapterName } from '../../database/index.js';
 import { header, success, error, info } from '../format.js';
 
 /**
@@ -163,7 +165,23 @@ export async function commandBuild(cwd: string, config: SysmaraConfig, jsonMode:
     console.log(info(`Scaffold: ${scaffoldWritten} written, ${scaffoldSkipped} skipped (already exist)`));
   }
 
-  // 6. Run diagnostics
+  // 6. Database schema generation (if database is configured)
+  if (config.database) {
+    if (!jsonMode) console.log('\n  Generating database schema...');
+    const adapter = getAdapter(config.database.adapter as AdapterName);
+    if (adapter) {
+      const dbOutputDir = path.resolve(cwd, config.database.outputDir ?? './app/database');
+      const schemaFiles = adapter.generateSchema(specs);
+      for (const file of schemaFiles) {
+        await writeFile(path.join(dbOutputDir, file.path), file.content);
+      }
+      if (!jsonMode) console.log(info(`Database schema: ${schemaFiles.length} file(s) generated`));
+    } else if (!jsonMode) {
+      console.log(info(`Database adapter "${config.database.adapter}" not found — skipping schema generation`));
+    }
+  }
+
+  // 7. Run diagnostics
   if (!jsonMode) console.log('\n  Running diagnostics...');
   const report = runDiagnostics(specs, compiled.manifest);
 

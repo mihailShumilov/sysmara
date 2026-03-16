@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] — 2026-03-16
+
+### Added
+
+- **Database-integrated init** (`sysmara init --db postgresql --orm sysmara-orm`): init command now accepts `--db` and `--orm` flags to configure the database provider and ORM adapter during project creation
+- **Docker environment generation**: init creates `docker-compose.yml` (with the selected database service), `Dockerfile` (multi-stage production build), and `.dockerignore`
+- **Environment file generation**: init creates `.env.example` (documented template) and `.env.local` (local dev defaults, gitignored)
+- **Comprehensive .gitignore**: init generates a complete `.gitignore` with entries for Node.js, SysMARA, environment files, and IDE files
+- **Auto schema generation in build**: `sysmara build` now auto-generates the database schema from entity specs when `database` is configured in `sysmara.config.yaml` (step 6 of the build pipeline)
+- **CLI flag parsing**: extended `parseFlags` to support `--key=value` and `--key value` patterns for all commands
+- Generator module (`src/generators/`) with Docker, env, and gitignore file generators
+- 13 new tests for Docker and environment generators
+- Updated BOOTSTRAP.md with database init steps, Docker startup, and auto schema generation
+
 ## [0.5.1] — 2026-03-16
 
 ### Added
