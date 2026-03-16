@@ -1,6 +1,6 @@
 {
   "name": "@sysmara/core",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "SysMARA — Model / Architecture / Runtime Abstraction for AI-native backends",
   "type": "module",
   "main": "./dist/index.js",
