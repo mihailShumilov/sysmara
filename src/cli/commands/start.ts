@@ -6,7 +6,7 @@
  */
 
 import * as path from 'node:path';
-import type { SysmaraConfig, HandlerContext, CapabilitySpec } from '../../types/index.js';
+import type { SysmaraConfig, HandlerContext, CapabilitySpec, SystemSpecs, EntitySpec } from '../../types/index.js';
 import { parseSpecDirectory } from '../../spec/index.js';
 import { SysmaraServer } from '../../runtime/server.js';
 import { SysmaraORM } from '../../database/adapters/sysmara-orm/orm.js';
@@ -70,14 +70,63 @@ function inferOperation(name: string): 'create' | 'read' | 'list' | 'update' | '
 }
 
 /**
+ * Returns a sensible default value for an entity field.
+ * Used to populate required entity fields that the capability input doesn't provide.
+ * Inspects field name, type, description, and constraints for hints.
+ */
+function defaultForField(field: { name: string; type: string; description?: string; constraints?: Array<{ type: string; value: unknown }> }): unknown {
+  // Check for enum constraint — use first enum value
+  if (field.constraints) {
+    const enumConstraint = field.constraints.find(c => c.type === 'enum');
+    if (enumConstraint && Array.isArray(enumConstraint.value) && enumConstraint.value.length > 0) {
+      return enumConstraint.value[0];
+    }
+  }
+
+  // Check description for pipe-separated values (e.g., "pending | in_progress | done")
+  if (field.description) {
+    const pipeMatch = field.description.match(/^(\w+)\s*\|/);
+    if (pipeMatch) {
+      return pipeMatch[1];
+    }
+  }
+
+  // Common field name heuristics
+  const name = field.name.toLowerCase();
+  if (name === 'status') return 'pending';
+  if (name === 'role') return 'user';
+  if (name === 'type' || name === 'kind') return 'default';
+
+  switch (field.type.toLowerCase()) {
+    case 'string':
+    case 'text':
+    case 'enum':
+      return '';
+    case 'number':
+    case 'integer':
+    case 'float':
+    case 'decimal':
+    case 'bigint':
+      return 0;
+    case 'boolean':
+    case 'bool':
+      return false;
+    default:
+      return '';
+  }
+}
+
+/**
  * Creates a generic handler for a capability that routes through the ORM.
  */
 function createCapabilityHandler(
   cap: CapabilitySpec,
   orm: SysmaraORM,
+  specs: SystemSpecs,
 ): (ctx: HandlerContext) => Promise<unknown> {
   const op = inferOperation(cap.name);
   const primaryEntity = cap.entities[0] ?? 'unknown';
+  const entity = specs.entities.find((e: EntitySpec) => e.name === primaryEntity);
 
   return async (ctx: HandlerContext): Promise<unknown> => {
     const repo = orm.repository<Record<string, unknown>>(primaryEntity, cap.name);
@@ -95,6 +144,16 @@ function createCapabilityHandler(
                 capability: cap.name,
               },
             };
+          }
+        }
+        // Auto-fill required entity fields not in input (e.g., status defaults)
+        if (entity) {
+          const inputFieldNames = new Set(cap.input.map(f => f.name));
+          for (const field of entity.fields) {
+            if (field.required && !(field.name in input) && !inputFieldNames.has(field.name)
+                && field.name !== 'id' && field.name !== 'created_at' && field.name !== 'updated_at') {
+              input[field.name] = defaultForField(field);
+            }
           }
         }
         const result = await repo.create(input);
@@ -197,7 +256,7 @@ export async function commandStart(
 
   for (const cap of specs.capabilities) {
     const { method, path: routePath } = inferRoute(cap);
-    const handler = createCapabilityHandler(cap, orm);
+    const handler = createCapabilityHandler(cap, orm, specs);
     server.route(method, routePath, cap.name, handler);
     registeredRoutes.push({ method, path: routePath, capability: cap.name });
     console.log(info(`${method.padEnd(6)} ${routePath.padEnd(25)} → ${cap.name}`));
