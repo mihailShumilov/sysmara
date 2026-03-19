@@ -11,6 +11,7 @@ import type { CapabilitySpec, SystemSpecs, EntitySpec } from '../../../types/ind
 import { CapabilityQueryBuilder } from './query-builder.js';
 import { OperationLog } from './operation-log.js';
 import type { OperationLogEntry } from './operation-log.js';
+import type { DatabaseDriver } from './driver.js';
 
 /**
  * A typed repository scoped to a single entity within a capability's boundaries.
@@ -33,12 +34,14 @@ export class SysmaraRepository<T> {
    * @param capability - The capability authorizing data access
    * @param specs - The complete system specifications
    * @param operationLog - The shared operation log for recording operations
+   * @param driver - Optional database driver for executing queries
    */
   constructor(
     private entityName: string,
     private capability: CapabilitySpec,
     private specs: SystemSpecs,
     private operationLog: OperationLog,
+    private driver?: DatabaseDriver,
   ) {
     const found = specs.entities.find((e) => e.name === entityName);
     if (!found) {
@@ -58,8 +61,12 @@ export class SysmaraRepository<T> {
     const query = this.queryBuilder.selectById(this.capability, this.entityName, id);
     const start = Date.now();
 
-    // TODO: implement with actual DB driver
-    const result: T | null = null;
+    let result: T | null = null;
+
+    if (this.driver) {
+      const qr = await this.driver.query(query.sql, query.params);
+      result = (qr.rows[0] as T | undefined) ?? null;
+    }
 
     this.logOperation(query.operation, query.affected_fields, query.sql, Date.now() - start, result ? 1 : 0);
     return result;
@@ -78,8 +85,12 @@ export class SysmaraRepository<T> {
     });
     const start = Date.now();
 
-    // TODO: implement with actual DB driver
-    const result: T | null = null;
+    let result: T | null = null;
+
+    if (this.driver) {
+      const qr = await this.driver.query(query.sql, query.params);
+      result = (qr.rows[0] as T | undefined) ?? null;
+    }
 
     this.logOperation(query.operation, query.affected_fields, query.sql, Date.now() - start, result ? 1 : 0);
     return result;
@@ -97,8 +108,12 @@ export class SysmaraRepository<T> {
     });
     const start = Date.now();
 
-    // TODO: implement with actual DB driver
-    const results: T[] = [];
+    let results: T[] = [];
+
+    if (this.driver) {
+      const qr = await this.driver.query(query.sql, query.params);
+      results = qr.rows as T[];
+    }
 
     this.logOperation(query.operation, query.affected_fields, query.sql, Date.now() - start, results.length);
     return results;
@@ -118,8 +133,14 @@ export class SysmaraRepository<T> {
     );
     const start = Date.now();
 
-    // TODO: implement with actual DB driver
-    const result = data as T;
+    let result: T;
+
+    if (this.driver) {
+      const qr = await this.driver.query(query.sql, query.params);
+      result = (qr.rows[0] as T | undefined) ?? data as T;
+    } else {
+      result = data as T;
+    }
 
     this.logOperation(query.operation, query.affected_fields, query.sql, Date.now() - start, 1);
     return result;
@@ -141,8 +162,14 @@ export class SysmaraRepository<T> {
     );
     const start = Date.now();
 
-    // TODO: implement with actual DB driver
-    const result = { id, ...data } as T;
+    let result: T;
+
+    if (this.driver) {
+      const qr = await this.driver.query(query.sql, query.params);
+      result = (qr.rows[0] as T | undefined) ?? { id, ...data } as T;
+    } else {
+      result = { id, ...data } as T;
+    }
 
     this.logOperation(query.operation, query.affected_fields, query.sql, Date.now() - start, 1);
     return result;
@@ -157,7 +184,9 @@ export class SysmaraRepository<T> {
     const query = this.queryBuilder.delete(this.capability, this.entityName, id);
     const start = Date.now();
 
-    // TODO: implement with actual DB driver
+    if (this.driver) {
+      await this.driver.query(query.sql, query.params);
+    }
 
     this.logOperation(query.operation, query.affected_fields, query.sql, Date.now() - start, 1);
   }

@@ -89,19 +89,39 @@ This creates the full project structure: YAML specs, database config, Docker env
 
 Options: `--db` (postgresql/mysql/sqlite), `--orm` (sysmara-orm/prisma/drizzle/typeorm).
 
-### Start the database and build
+### Build and start
 
 ```bash
-docker compose up -d    # Start local database
+docker compose up -d    # Start local database (PostgreSQL/MySQL only)
 sysmara build           # Full build pipeline
+sysmara start           # Start the server with auto-wired routes
 ```
 
-Parses all specs, cross-validates references, builds the system graph and map, compiles capabilities, scaffolds starter implementation files in `app/`, generates database schema, and runs diagnostics.
+That's it. `sysmara start` parses your YAML specs, connects to the database, creates tables, auto-wires every capability to an HTTP route, and starts the server. No manual route registration, no entry point boilerplate.
+
+```
+SysMARA Server
+  Parsing specs...
+  Connecting to database...
+  ✓ Connected to postgresql (sysmara-orm)
+  Applying database schema...
+  ✓ Schema applied
+
+  Registering routes...
+  ✓ POST   /users                    → create_user
+  ✓ GET    /users/:id                → get_user
+
+  ✓ Server running at http://localhost:3000
+```
+
+### Alternative: Build generates a server entry point
+
+`sysmara build` also generates `app/server.ts` — a standalone entry point that imports all scaffolded capability handlers and registers them as routes. You can customize this file and run it directly with `node` or `tsx` for production deployments.
 
 ### Run diagnostics
 
 ```bash
-sysmara diagnose
+sysmara doctor
 ```
 
 Runs 20+ validation checks and outputs a detailed report of errors, warnings, and suggestions.
@@ -185,23 +205,33 @@ flows:
 
 ## Database Layer
 
-SysMARA v0.3.0 ships a pluggable database adapter system. Configure your adapter in `sysmara.config.yaml`:
+SysMARA ships a pluggable database adapter system with real database drivers. Configure in `sysmara.config.yaml`:
 
 ```yaml
 database:
-  adapter: prisma        # prisma | drizzle | typeorm | sysmara-orm
+  adapter: sysmara-orm   # sysmara-orm | prisma | drizzle | typeorm
   provider: postgresql   # postgresql | mysql | sqlite
-  outputDir: app/generated/db
+  connectionString: "postgresql://user:pass@localhost:5432/mydb"
 ```
+
+### Supported Database Drivers
+
+| Provider | Package | Install |
+|----------|---------|---------|
+| PostgreSQL | `pg` | `npm install pg` |
+| MySQL | `mysql2` | `npm install mysql2` |
+| SQLite | `better-sqlite3` | `npm install better-sqlite3` |
+
+Drivers are optional peer dependencies — install only the one you need. When no driver is installed, the ORM falls back to an in-memory store (useful for testing).
 
 ### Supported Adapters
 
 | Adapter | Type | Best for |
 |---------|------|----------|
+| `sysmara-orm` | Native | AI-agent workflows, zero-config CRUD |
 | `prisma` | Third-party | Teams already using Prisma |
 | `drizzle` | Third-party | Edge/serverless, TypeScript-first |
 | `typeorm` | Third-party | NestJS/Java-style projects |
-| `sysmara-orm` | Native | AI-agent workflows |
 
 ### CLI
 
@@ -257,20 +287,24 @@ sysmara db migrate
 ```typescript
 import { SysmaraORM } from "@sysmara/core";
 
-const orm = new SysmaraORM(config, specs);
+const orm = new SysmaraORM(dbConfig, specs);
+await orm.connect();        // connects to the database
+await orm.applySchema();    // creates tables (IF NOT EXISTS)
 
 // Execute a declared capability
 const user = await orm.capability("create_user", { email: "alice@example.com", role: "admin" });
 
 // Typed repository
 const repo = orm.repository("user");
-const user = await repo.findOne({ email: "alice@example.com" });
+const found = await repo.findOne({ email: "alice@example.com" });
 const users = await repo.findMany({ role: "admin" });
-await repo.update(user.id, { role: "member" });
-await repo.delete(user.id);
+await repo.update(found.id, { role: "member" });
+await repo.delete(found.id);
 
 // Read operation log
 const log = orm.getOperationLog();
+
+await orm.disconnect();     // close connection
 ```
 
 ## Project Structure
@@ -417,7 +451,7 @@ invariants:
     message: A user with this email already exists
 ```
 
-## v0.5.1 Status
+## v0.7.0 Status
 
 ### Production-Ready
 
@@ -433,12 +467,15 @@ invariants:
 - Safe edit zone validation
 - HTTP runtime with typed handlers
 - Change Plan Protocol with risk classification and impact analysis
-- CLI commands: init, add, build, graph, compile, scaffold, diagnose, doctor, explain, impact, plan, check boundaries, db, flow
+- CLI commands: init, add, build, graph, compile, scaffold, start, doctor, explain, impact, plan, check boundaries, db, flow
+- **`sysmara start`** — auto-wires all capabilities to HTTP routes, connects to DB, applies schema, starts server
+- **Real database drivers** — PostgreSQL (`pg`), MySQL (`mysql2`), SQLite (`better-sqlite3`), in-memory fallback
+- **Server entry point generation** — `sysmara build` generates `app/server.ts` with all routes wired
 - Database adapter interface and registry
 - Prisma adapter (schema + repository generation)
 - Drizzle adapter (TypeScript-first schema)
 - TypeORM adapter (@Entity classes)
-- SysMARA ORM (AI-first ORM with capability-based queries, operation log, migration engine)
+- SysMARA ORM (AI-first ORM with real DB execution, capability-based queries, operation log, migration engine)
 - Flow Execution Engine (saga compensation, retry with backoff, condition evaluation, AI-readable execution log)
 
 ### Experimental
@@ -505,6 +542,11 @@ sysmara db status      # show migration status
 
 # Generate starter app/ implementation files from specs (skip existing)
 sysmara scaffold
+
+# Start the server with auto-wired routes
+sysmara start
+sysmara start --port 8080 --host 127.0.0.1
+sysmara start --no-schema   # skip DB schema creation
 
 # Flow execution
 sysmara flow list                        # list all flows with step counts
@@ -574,9 +616,12 @@ console.log(formatDiagnosticsTerminal(report));
 const impact = analyzeImpact(graph, 'entity:user');
 
 // Database — SysMARA ORM
-const orm = new SysmaraORM(config, specs);
+const orm = new SysmaraORM(dbConfig, specs);
+await orm.connect();
+await orm.applySchema();
 const repo = orm.repository('user');
 const user = await repo.findOne({ email: 'alice@example.com' });
+await orm.disconnect();
 ```
 
 ### Runtime Server

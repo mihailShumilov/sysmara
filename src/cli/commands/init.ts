@@ -327,6 +327,7 @@ database:
     console.log('  docker compose up -d  — Start local database');
   }
   console.log('  sysmara build         — Validate specs, compile, scaffold, generate schema');
+  console.log('  sysmara start         — Start the server with auto-wired routes');
   console.log('  sysmara validate      — Validate all specs');
   console.log('  sysmara doctor        — Run comprehensive health check');
 }

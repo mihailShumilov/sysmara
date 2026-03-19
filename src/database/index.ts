@@ -38,6 +38,8 @@ export {
   MigrationEngine,
   generateSysmaraSchema,
   createSysmaraOrmAdapter,
+  createDriver,
+  createInMemoryDriver,
 } from './adapters/index.js';
 export type {
   OperationLogEntry,
@@ -45,4 +47,7 @@ export type {
   QueryOperation,
   SysmaraMigrationStep,
   MigrationPlan,
+  DatabaseDriver,
+  QueryResult,
+  Row,
 } from './adapters/index.js';
