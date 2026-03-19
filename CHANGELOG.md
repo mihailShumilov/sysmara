@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] — 2026-03-19
+
+### Added
+
+- **`sysmara start` command**: auto-wires all capabilities to HTTP routes, connects to the database, applies schema (CREATE TABLE IF NOT EXISTS), and starts the server — zero boilerplate
+- **Real database drivers**: SysmaraORM now executes actual SQL queries against real databases
+  - PostgreSQL via `pg` (optional peer dependency)
+  - MySQL via `mysql2` (optional peer dependency)
+  - SQLite via `better-sqlite3` (optional peer dependency)
+  - In-memory fallback when no driver is installed (testing/development)
+- **ORM `connect()`/`disconnect()`/`applySchema()` methods**: full database lifecycle management
+- **Server entry point generation**: `sysmara build` generates `app/server.ts` — a runnable entry point that imports all scaffolded capability handlers and registers them as routes
+- **Auto route inference**: capability names are automatically mapped to HTTP methods and paths (e.g., `create_user` → `POST /users`, `get_user` → `GET /users/:id`)
+
+### Changed
+
+- **Config parser** now uses the `yaml` package (previously hand-rolled, fragile) — supports full YAML including nested objects, arrays, and all scalar types
+- **SysmaraRepository** now accepts an optional database driver and executes real queries when connected (previously all methods were stubs returning hardcoded values)
+- **SysmaraORM.capability()** now routes to actual CRUD operations through the repository (previously returned `{ status: 'pending' }`)
+
+### Fixed
+
+- CLI version string now matches package.json (`0.7.0`)
+
 ## [Unreleased]
 
 ### Added

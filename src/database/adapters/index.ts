@@ -22,6 +22,8 @@ export {
   MigrationEngine,
   generateSchema as generateSysmaraSchema,
   createSysmaraOrmAdapter,
+  createDriver,
+  createInMemoryDriver,
 } from './sysmara-orm/index.js';
 export type {
   OperationLogEntry,
@@ -29,6 +31,9 @@ export type {
   QueryOperation,
   MigrationStep as SysmaraMigrationStep,
   MigrationPlan,
+  DatabaseDriver,
+  QueryResult,
+  Row,
 } from './sysmara-orm/index.js';
 
 // Auto-register all adapters

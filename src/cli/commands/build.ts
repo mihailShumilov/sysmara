@@ -16,6 +16,8 @@ import { scaffoldSpecs } from '../../scaffold/index.js';
 import { getAdapter } from '../../database/index.js';
 import type { AdapterName } from '../../database/index.js';
 import { header, success, error, info } from '../format.js';
+import { generateServerEntry } from '../../generators/server-entry.js';
+import type { DatabaseProvider } from '../../database/adapter.js';
 
 /**
  * Creates a directory (and any missing parent directories) if it does not already exist.
@@ -166,7 +168,32 @@ export async function commandBuild(cwd: string, config: SysmaraConfig, jsonMode:
     console.log(info(`Scaffold: ${scaffoldWritten} written, ${scaffoldSkipped} skipped (already exist)`));
   }
 
-  // 6. Database schema generation (if database is configured)
+  // 6. Generate server entry point (skip if exists)
+  if (!jsonMode) console.log('\n  Generating server entry point...');
+  const serverEntryPath = path.join(appDir, 'server.ts');
+  let serverEntryExists = false;
+  try {
+    await fs.stat(serverEntryPath);
+    serverEntryExists = true;
+  } catch {
+    // file does not exist
+  }
+
+  if (!serverEntryExists) {
+    const dbProvider = (config.database?.provider ?? 'sqlite') as DatabaseProvider;
+    const serverEntry = generateServerEntry(specs, {
+      db: dbProvider,
+      orm: config.database?.adapter as 'sysmara-orm' | 'prisma' | 'drizzle' | 'typeorm' | undefined,
+      connectionString: config.database?.connectionString,
+      port: config.port,
+    });
+    await writeFile(serverEntryPath, serverEntry.content);
+    if (!jsonMode) console.log(info('Generated app/server.ts (entry point)'));
+  } else if (!jsonMode) {
+    console.log(info('app/server.ts already exists — skipped'));
+  }
+
+  // Database schema generation (if database is configured)
   if (config.database) {
     if (!jsonMode) console.log('\n  Generating database schema...');
     const adapter = getAdapter(config.database.adapter as AdapterName);

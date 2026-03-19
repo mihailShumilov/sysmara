@@ -110,6 +110,8 @@ export {
   generateSysmaraSchema,
   sysmaraOrmAdapter,
   createSysmaraOrmAdapter,
+  createDriver,
+  createInMemoryDriver,
 } from './database/index.js';
 export type {
   OperationLogEntry,
@@ -117,4 +119,7 @@ export type {
   QueryOperation,
   SysmaraMigrationStep,
   MigrationPlan,
+  DatabaseDriver,
+  QueryResult,
+  Row,
 } from './database/index.js';

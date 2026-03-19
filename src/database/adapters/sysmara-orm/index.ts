@@ -33,5 +33,9 @@ export { generateSchema } from './schema-generator.js';
 export { MigrationEngine } from './migration-engine.js';
 export type { MigrationStep, MigrationPlan } from './migration-engine.js';
 
+// Database driver
+export { createDriver, createInMemoryDriver } from './driver.js';
+export type { DatabaseDriver, QueryResult, Row } from './driver.js';
+
 // Adapter (DatabaseAdapter implementation)
 export { sysmaraOrmAdapter, createSysmaraOrmAdapter } from './adapter.js';
