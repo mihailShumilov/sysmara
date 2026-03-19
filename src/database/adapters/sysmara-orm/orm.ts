@@ -19,6 +19,8 @@ import type { OperationLogEntry } from './operation-log.js';
 import { generateSchema } from './schema-generator.js';
 import { MigrationEngine } from './migration-engine.js';
 import type { MigrationPlan } from './migration-engine.js';
+import type { DatabaseDriver } from './driver.js';
+import { createDriver, createInMemoryDriver } from './driver.js';
 
 /**
  * The AI-first ORM for SysMARA. Every database operation is scoped to
@@ -28,6 +30,7 @@ import type { MigrationPlan } from './migration-engine.js';
  * @example
  * ```typescript
  * const orm = new SysmaraORM(config, specs);
+ * await orm.connect(); // connects to the database
  *
  * // Execute a capability as a database operation
  * const result = await orm.capability('create-user', { name: 'Alice', email: 'alice@example.com' });
@@ -41,6 +44,8 @@ import type { MigrationPlan } from './migration-engine.js';
  *
  * // Review all operations for AI audit
  * const log = orm.getOperationLog();
+ *
+ * await orm.disconnect(); // close the connection
  * ```
  */
 export class SysmaraORM {
@@ -56,6 +61,9 @@ export class SysmaraORM {
   /** Cache of resolved capability specs by name. */
   private capabilityMap: Map<string, CapabilitySpec>;
 
+  /** The database driver for executing queries. */
+  private driver: DatabaseDriver | null = null;
+
   /**
    * Creates a new SysmaraORM instance.
    *
@@ -70,6 +78,70 @@ export class SysmaraORM {
     this.queryBuilder = new CapabilityQueryBuilder(specs);
     this.migrationEngine = new MigrationEngine(config.provider);
     this.capabilityMap = new Map(specs.capabilities.map((c) => [c.name, c]));
+  }
+
+  /**
+   * Connects to the database. If a connection string is provided in the config,
+   * uses the appropriate driver (pg, mysql2, better-sqlite3). Otherwise falls back
+   * to an in-memory driver.
+   */
+  async connect(): Promise<void> {
+    if (this.driver?.isConnected()) return;
+
+    if (this.config.connectionString) {
+      this.driver = createDriver(this.config.provider, this.config.connectionString);
+    } else {
+      this.driver = createInMemoryDriver(this.config.provider);
+    }
+
+    await this.driver.connect();
+  }
+
+  /**
+   * Closes the database connection.
+   */
+  async disconnect(): Promise<void> {
+    if (this.driver) {
+      await this.driver.disconnect();
+      this.driver = null;
+    }
+  }
+
+  /**
+   * Returns the database driver instance.
+   * Throws if not connected.
+   */
+  getDriver(): DatabaseDriver {
+    if (!this.driver) {
+      throw new Error('ORM not connected. Call orm.connect() first.');
+    }
+    return this.driver;
+  }
+
+  /**
+   * Sets an external database driver (useful for testing or custom drivers).
+   */
+  setDriver(driver: DatabaseDriver): void {
+    this.driver = driver;
+  }
+
+  /**
+   * Returns true if the ORM is connected to a database.
+   */
+  isConnected(): boolean {
+    return this.driver?.isConnected() ?? false;
+  }
+
+  /**
+   * Creates all tables defined in the system specs.
+   * Safe to call multiple times (uses IF NOT EXISTS).
+   */
+  async applySchema(): Promise<void> {
+    if (!this.driver) {
+      throw new Error('ORM not connected. Call orm.connect() first.');
+    }
+    const schema = this.generateSchema();
+    await this.driver.exec(schema);
   }
 
   /**
@@ -95,20 +167,51 @@ export class SysmaraORM {
       }
     }
 
-    // TODO: implement with actual DB driver — route to the correct entity operation
-    // based on capability semantics (CRUD detection from capability name/description)
-    const result: Record<string, unknown> = { capability: name, input, status: 'pending' };
+    // Route to the correct entity operation
+    const primaryEntity = cap.entities[0];
+    if (!primaryEntity) {
+      throw new Error(`Capability "${name}" has no entities defined.`);
+    }
+
+    const op = inferOperation(name);
+    const repo = this.repository<Record<string, unknown>>(primaryEntity, name);
+    let result: unknown;
+
+    switch (op) {
+      case 'insert': {
+        result = await repo.create(input);
+        break;
+      }
+      case 'select': {
+        if (input.id) {
+          result = await repo.findById(input.id as string);
+        } else {
+          result = await repo.findMany(input);
+        }
+        break;
+      }
+      case 'update': {
+        const { id, ...data } = input;
+        result = await repo.update(id as string, data);
+        break;
+      }
+      case 'delete': {
+        await repo.delete(input.id as string);
+        result = { success: true };
+        break;
+      }
+    }
 
     // Log the operation
     for (const entityName of cap.entities) {
       this.operationLog.record({
         capability: name,
         entity: entityName,
-        operation: inferOperation(name),
+        operation: op,
         invariants_checked: cap.invariants,
         affected_fields: cap.input.map((f) => f.name),
         duration_ms: Date.now() - start,
-        affected_rows: 0,
+        affected_rows: result ? 1 : 0,
         sql_template: `-- capability: ${name} → entity: ${entityName}`,
       });
     }
@@ -144,7 +247,13 @@ export class SysmaraORM {
       cap = found;
     }
 
-    return new SysmaraRepository<T>(entityName, cap, this.specs, this.operationLog);
+    return new SysmaraRepository<T>(
+      entityName,
+      cap,
+      this.specs,
+      this.operationLog,
+      this.driver ?? undefined,
+    );
   }
 
   /**

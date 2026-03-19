@@ -309,6 +309,19 @@ export class SysmaraServer {
   }
 
   /**
+   * Returns the address the server is listening on.
+   * Useful for tests that bind to port 0 and need the actual port.
+   *
+   * @returns The address object or null if not listening.
+   */
+  getAddress(): { address: string; port: number } | null {
+    if (!this.server) return null;
+    const addr = this.server.address();
+    if (!addr || typeof addr === 'string') return null;
+    return { address: addr.address, port: addr.port };
+  }
+
+  /**
    * Returns route specifications for all registered routes, suitable for
    * introspection or API documentation generation.
    *
