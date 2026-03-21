@@ -272,4 +272,69 @@ describe('buildSystemGraph', () => {
       type: 'exposes',
     });
   });
+
+  it('should produce file nodes for each capability', () => {
+    const specs = makeSpecs({
+      capabilities: [
+        {
+          name: 'create-user',
+          description: 'Creates a user',
+          module: 'auth',
+          entities: [],
+          input: [],
+          output: [],
+          policies: [],
+          invariants: [],
+        },
+      ],
+    });
+
+    const graph = buildSystemGraph(specs);
+    const fileNodes = graph.nodes.filter((n) => n.type === 'file');
+    expect(fileNodes).toHaveLength(3);
+    expect(fileNodes.map((n) => n.name).sort()).toEqual([
+      'app/generated/metadata/create-user.json',
+      'app/generated/routes/create-user.ts',
+      'app/generated/tests/create-user.test.ts',
+    ]);
+    // Each file node should carry capability and module metadata
+    for (const node of fileNodes) {
+      expect(node.metadata).toEqual({ capability: 'create-user', module: 'auth' });
+    }
+  });
+
+  it('should produce owns edges from module to its capability files', () => {
+    const specs = makeSpecs({
+      capabilities: [
+        {
+          name: 'create-user',
+          description: 'Creates a user',
+          module: 'auth',
+          entities: [],
+          input: [],
+          output: [],
+          policies: [],
+          invariants: [],
+        },
+      ],
+      modules: [
+        {
+          name: 'auth',
+          description: 'Auth module',
+          entities: [],
+          capabilities: ['create-user'],
+          allowedDependencies: [],
+          forbiddenDependencies: [],
+        },
+      ],
+    });
+
+    const graph = buildSystemGraph(specs);
+    const ownsEdges = graph.edges.filter((e) => e.type === 'owns');
+    expect(ownsEdges).toHaveLength(3);
+    for (const edge of ownsEdges) {
+      expect(edge.source).toBe('module:auth');
+      expect(edge.target).toMatch(/^file:app\/generated\//);
+    }
+  });
 });

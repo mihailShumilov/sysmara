@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.2] — 2026-03-21
+
+### Added
+
+- **File nodes in the system graph**: each capability now generates three `file` nodes (`routes/*.ts`, `tests/*.test.ts`, `metadata/*.json`) in the system graph, matching the formal definition G = (V, E, τ_v, τ_e) from the scholarly article
+- **`owns` edges**: module → file edges connect each module to the generated files of its capabilities, enabling precise file-level impact analysis
+- **`affectedFiles` in impact analysis**: `ImpactSurface` now includes an `affectedFiles` array listing concrete file paths affected by a change
+- Impact terminal formatter now displays the "Affected Files" section
+
+### Fixed
+
+- `generatedArtifacts` in impact analysis no longer produces invalid paths for file-type nodes
+
 ## [0.7.0] — 2026-03-19
 
 ### Added

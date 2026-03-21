@@ -183,4 +183,28 @@ describe('analyzeImpact', () => {
     expect(result).not.toBeNull();
     expect(result!.affectedTests).toContain('tests/capabilities/create-user.test.ts');
   });
+
+  it('should include affected files reachable via module owns edges', () => {
+    const { specs, routes } = buildConnectedSpecs();
+    const graph = buildSystemGraph(specs, routes);
+    const result = analyzeImpact(graph, 'entity:User');
+
+    expect(result).not.toBeNull();
+    // User entity belongs_to auth module, which owns file nodes for create-user
+    expect(result!.affectedFiles.length).toBeGreaterThan(0);
+    expect(result!.affectedFiles).toContain('app/generated/routes/create-user.ts');
+  });
+
+  it('should not include file nodes in generatedArtifacts', () => {
+    const { specs, routes } = buildConnectedSpecs();
+    const graph = buildSystemGraph(specs, routes);
+    const result = analyzeImpact(graph, 'entity:User');
+
+    expect(result).not.toBeNull();
+    // generatedArtifacts should only contain non-file node paths
+    for (const artifact of result!.generatedArtifacts) {
+      expect(artifact).toMatch(/^generated\/\w+\/.+\.ts$/);
+      expect(artifact).not.toContain('file');
+    }
+  });
 });

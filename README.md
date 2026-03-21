@@ -38,7 +38,13 @@ In a SysMARA project, humans define the boundaries — what entities exist, what
 
 ### AI System Graph
 
-The system graph is a directed graph where every entity, capability, policy, invariant, module, and flow is a node, and every relationship between them is a typed edge. It is built automatically from your YAML specs and written to `.framework/system-graph.json`. AI agents consume this graph to understand the full topology of your system before making any change.
+The system graph is a directed graph where every entity, capability, policy, invariant, module, flow, route, and generated file is a node, and every relationship between them is a typed edge. It is built automatically from your YAML specs and written to `.framework/system-graph.json`. AI agents consume this graph to understand the full topology of your system before making any change.
+
+**Node types:** `entity`, `capability`, `module`, `policy`, `invariant`, `flow`, `route`, `file`
+
+**Edge types:** `belongs_to`, `uses_entity`, `governed_by`, `enforces`, `protects`, `depends_on`, `triggers`, `exposes`, `step_of`, `owns`
+
+The `file` nodes represent generated artifacts (route handlers, test scaffolds, metadata) for each capability. The `owns` edge connects a module to the files generated for its capabilities, enabling impact analysis to show exactly which files are affected by a change.
 
 The companion **system map** (`.framework/system-map.json`) is a higher-level index designed specifically for AI consumption: it lists modules with their capabilities, entities, and dependencies in a flat, scannable format.
 

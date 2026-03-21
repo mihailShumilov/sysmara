@@ -122,6 +122,7 @@ export function analyzeImpact(
   const affectedCapabilities: string[] = [];
   const affectedRoutes: string[] = [];
   const affectedFlows: string[] = [];
+  const affectedFiles: string[] = [];
 
   for (const node of affectedNodes) {
     switch (node.type) {
@@ -143,6 +144,9 @@ export function analyzeImpact(
       case 'flow':
         affectedFlows.push(node.name);
         break;
+      case 'file':
+        affectedFiles.push(node.name);
+        break;
     }
   }
 
@@ -153,6 +157,7 @@ export function analyzeImpact(
   affectedCapabilities.sort();
   affectedRoutes.sort();
   affectedFlows.sort();
+  affectedFiles.sort();
 
   // Generate test file paths for affected capabilities
   const allAffectedCaps = [...affectedCapabilities];
@@ -164,9 +169,11 @@ export function analyzeImpact(
     (capName) => `tests/capabilities/${capName}.test.ts`
   );
 
-  // Generate artifact paths for all affected nodes + target
+  // Generate artifact paths for all affected nodes + target (excluding file nodes
+  // which already represent concrete file paths and would produce invalid artifact paths)
   const allAffected = [targetNode, ...affectedNodes];
   const generatedArtifacts = allAffected
+    .filter((node) => node.type !== 'file')
     .map((node) => `generated/${node.type}/${node.name}.ts`)
     .sort();
 
@@ -179,6 +186,7 @@ export function analyzeImpact(
     affectedCapabilities,
     affectedRoutes,
     affectedFlows,
+    affectedFiles,
     affectedTests,
     generatedArtifacts,
   };

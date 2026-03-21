@@ -16,8 +16,8 @@ import type {
 /**
  * Builds a directed system dependency graph from parsed specifications and optional route definitions.
  *
- * Creates nodes for every entity, capability, module, policy, invariant, flow, and route.
- * Creates typed edges representing relationships such as:
+ * Creates nodes for every entity, capability, module, policy, invariant, flow, route,
+ * and generated file. Creates typed edges representing relationships such as:
  * - `belongs_to`: entity -> module
  * - `uses_entity`: capability -> entity
  * - `governed_by`: capability -> policy
@@ -27,6 +27,7 @@ import type {
  * - `triggers`: capability -> flow
  * - `exposes`: route -> capability
  * - `step_of`: capability -> flow
+ * - `owns`: module -> file
  *
  * Nodes and edges are sorted deterministically by ID for stable output.
  *
@@ -113,6 +114,29 @@ export function buildSystemGraph(specs: SystemSpecs, routes?: RouteSpec[]): Syst
           capability: route.capability,
           ...(route.description ? { description: route.description } : {}),
         },
+      });
+    }
+  }
+
+  // Build a map from capability name to its owning module
+  const capToModule = new Map<string, string>();
+  for (const cap of specs.capabilities) {
+    capToModule.set(cap.name, cap.module);
+  }
+
+  // Generated file nodes for each capability (route handler, test scaffold, metadata)
+  for (const capability of specs.capabilities) {
+    const filePaths = [
+      `app/generated/routes/${capability.name}.ts`,
+      `app/generated/tests/${capability.name}.test.ts`,
+      `app/generated/metadata/${capability.name}.json`,
+    ];
+    for (const filePath of filePaths) {
+      nodes.push({
+        id: `file:${filePath}`,
+        type: 'file',
+        name: filePath,
+        metadata: { capability: capability.name, module: capability.module },
       });
     }
   }
@@ -213,6 +237,23 @@ export function buildSystemGraph(specs: SystemSpecs, routes?: RouteSpec[]): Syst
         source: `capability:${step.action}`,
         target: `flow:${flow.name}`,
         type: 'step_of',
+      });
+    }
+  }
+
+  // module owns generated files (via capability's module assignment)
+  for (const capability of specs.capabilities) {
+    const moduleName = capability.module;
+    const filePaths = [
+      `app/generated/routes/${capability.name}.ts`,
+      `app/generated/tests/${capability.name}.test.ts`,
+      `app/generated/metadata/${capability.name}.json`,
+    ];
+    for (const filePath of filePaths) {
+      edges.push({
+        source: `module:${moduleName}`,
+        target: `file:${filePath}`,
+        type: 'owns',
       });
     }
   }
