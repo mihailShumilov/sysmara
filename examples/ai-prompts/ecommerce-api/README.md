@@ -4,7 +4,7 @@ This project was generated from a single AI prompt using SysMARA.
 
 ## Original Prompt
 
-> Build an e-commerce API with products, orders, and inventory management
+See [PROMPT.md](./PROMPT.md) for the full copy-pasteable prompt.
 
 ## Project Structure
 

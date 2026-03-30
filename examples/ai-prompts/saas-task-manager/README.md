@@ -4,9 +4,7 @@ This example demonstrates how a single human prompt produces a complete SysMARA 
 
 ## Original Prompt
 
-> Build a SaaS task manager with workspaces, tasks, and user roles
-
-That single sentence was expanded into a full system specification containing entities, capabilities, policies, invariants, modules, and flows.
+See [PROMPT.md](./PROMPT.md) for the full copy-pasteable prompt.
 
 ## Project Structure
 

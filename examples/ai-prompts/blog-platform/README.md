@@ -2,7 +2,7 @@
 
 ## Original Prompt
 
-> Build a blog platform with posts, authors, tags, and moderation
+See [PROMPT.md](./PROMPT.md) for the full copy-pasteable prompt.
 
 ## Project Structure
 
