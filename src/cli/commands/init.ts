@@ -18,6 +18,7 @@ import {
   generateGitignore,
   generatePackageJson,
   generateReadme,
+  generateTsconfig,
   connectionString,
 } from '../../generators/index.js';
 
@@ -318,7 +319,12 @@ database:
   await writeFile(path.join(cwd, readme.path), readme.content);
   console.log(`  created ${readme.path}`);
 
-  // 9. Print next steps
+  // 9. Generate tsconfig.json
+  const tsconfig = generateTsconfig();
+  await writeFile(path.join(cwd, tsconfig.path), tsconfig.content);
+  console.log(`  created ${tsconfig.path}`);
+
+  // 10. Print next steps
   console.log('');
   console.log(success('Project initialized successfully.'));
   console.log('');

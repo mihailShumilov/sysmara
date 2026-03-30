@@ -9,3 +9,4 @@ export { generateGitignore } from './gitignore.js';
 export { generatePackageJson } from './package-json.js';
 export { generateReadme } from './readme.js';
 export { generateServerEntry } from './server-entry.js';
+export { generateTsconfig } from './tsconfig.js';

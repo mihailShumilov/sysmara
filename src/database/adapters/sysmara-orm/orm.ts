@@ -231,6 +231,13 @@ export class SysmaraORM {
    * @throws Error if the entity or capability is not found
    */
   repository<T>(entityName: string, capabilityName?: string): SysmaraRepository<T> {
+    if (!this.driver) {
+      throw new Error(
+        'ORM not connected. Call await orm.connect() before creating repositories. ' +
+          'If no database is configured, connect() will use an in-memory driver automatically.',
+      );
+    }
+
     let cap: CapabilitySpec;
 
     if (capabilityName) {
@@ -252,7 +259,7 @@ export class SysmaraORM {
       cap,
       this.specs,
       this.operationLog,
-      this.driver ?? undefined,
+      this.driver,
     );
   }
 

@@ -227,9 +227,14 @@ function createCapabilityHandler(
         return result;
       }
       case 'list': {
-        const filters = ctx.query as unknown as Record<string, unknown>;
-        const results = await repo.findMany(Object.keys(filters).length > 0 ? filters : undefined);
-        return { items: results, count: results.length };
+        const { limit: limitStr, offset: offsetStr, order_by, order_dir, ...filterParams } = ctx.query as Record<string, string>;
+        const limit = limitStr ? parseInt(limitStr, 10) : 50;
+        const offset = offsetStr ? parseInt(offsetStr, 10) : 0;
+        const results = await repo.findMany(
+          Object.keys(filterParams).length > 0 ? filterParams : undefined,
+          { limit, offset, orderBy: order_by, orderDir: order_dir as 'ASC' | 'DESC' | undefined },
+        );
+        return { items: results, count: results.length, limit, offset };
       }
       case 'update': {
         const id = ctx.params.id;

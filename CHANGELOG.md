@@ -20,6 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Status transition capability scaffolding**: operations like `publish_post`, `archive_post`, `submit_post_for_review`, `approve_comment`, `reject_comment`, `flag_content` now generate proper status-transition logic (find entity, update status field) instead of falling through to a read-only `findById`
 - **Association capability scaffolding**: operations like `tag_post`, `untag_post` now generate proper create/delete logic on the association entity instead of incorrect `findById` calls
 - **Expanded operation inference**: `inferOperation()` now recognizes 20+ verb prefixes for status transitions (`publish_`, `archive_`, `approve_`, `reject_`, `submit_`, `moderate_`, `flag_`, etc.) and association operations (`tag_`, `untag_`, `link_`, `unlink_`, `invite_`, `kick_`)
+- **Pagination in list handlers**: scaffolded list handlers now support `?limit=N&offset=N&order_by=field&order_dir=ASC|DESC` query parameters (default: limit 50, offset 0). `SysmaraRepository.findMany()` also accepts pagination options.
+- **tsconfig.json generation**: `sysmara init` now generates a `tsconfig.json` configured for ES2022/NodeNext — projects have a proper TypeScript build setup out of the box
+- **Status transition and association route inference in generated server**: generated `app/server.ts` now maps status-transition capabilities (publish_, approve_, etc.) to `PATCH /:id/<verb>` and association capabilities (tag_, untag_, etc.) to `POST /:id/<verb>`
+- **ORM fails fast when not connected**: `orm.repository()` now throws `"ORM not connected. Call await orm.connect() before creating repositories."` instead of silently returning empty results (findById → null, findMany → [], create → echo). This makes the error obvious when `connect()` is forgotten.
 
 ## [0.7.2] — 2026-03-21
 

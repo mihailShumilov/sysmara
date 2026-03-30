@@ -476,8 +476,10 @@ invariants:
 - CLI commands: init, add, build, graph, compile, scaffold, start, doctor, explain, impact, plan, check boundaries, db, flow
 - **`sysmara start`** — auto-wires all capabilities to HTTP routes, connects to DB, applies schema, starts server
 - **Real database drivers** — PostgreSQL (`pg`), MySQL (`mysql2`), SQLite (`better-sqlite3`), in-memory fallback
-- **Server entry point generation** — `sysmara build` generates `app/server.ts` with all routes wired
+- **Server entry point generation** — `sysmara build` generates `app/server.ts` with all routes wired (including status-transition and association routes)
 - **Proper error mapping** — policy violations return 403, not found returns 404, validation returns 400
+- **Pagination** — list handlers support `?limit=N&offset=N&order_by=field&order_dir=ASC|DESC` (default limit 50)
+- **tsconfig.json generation** — `sysmara init` generates a TypeScript config out of the box
 - Database adapter interface and registry
 - Prisma adapter (schema + repository generation)
 - Drizzle adapter (TypeScript-first schema)
@@ -508,8 +510,9 @@ Requires Node.js 20 or later.
 ## CLI
 
 ```bash
-# Initialize a new project with example specs
+# Initialize a new project with example specs, tsconfig.json, Docker, env files
 sysmara init
+sysmara init --db postgresql --orm sysmara-orm
 
 # Add a spec (entity, capability, policy, invariant, module, flow)
 sysmara add <type> <name>

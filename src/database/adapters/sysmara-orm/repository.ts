@@ -34,14 +34,14 @@ export class SysmaraRepository<T> {
    * @param capability - The capability authorizing data access
    * @param specs - The complete system specifications
    * @param operationLog - The shared operation log for recording operations
-   * @param driver - Optional database driver for executing queries
+   * @param driver - The database driver for executing queries
    */
   constructor(
     private entityName: string,
     private capability: CapabilitySpec,
     private specs: SystemSpecs,
     private operationLog: OperationLog,
-    private driver?: DatabaseDriver,
+    private driver: DatabaseDriver,
   ) {
     const found = specs.entities.find((e) => e.name === entityName);
     if (!found) {
@@ -61,12 +61,8 @@ export class SysmaraRepository<T> {
     const query = this.queryBuilder.selectById(this.capability, this.entityName, id);
     const start = Date.now();
 
-    let result: T | null = null;
-
-    if (this.driver) {
-      const qr = await this.driver.query(query.sql, query.params);
-      result = (qr.rows[0] as T | undefined) ?? null;
-    }
+    const qr = await this.driver.query(query.sql, query.params);
+    const result = (qr.rows[0] as T | undefined) ?? null;
 
     this.logOperation(query.operation, query.affected_fields, query.sql, Date.now() - start, result ? 1 : 0);
     return result;
@@ -85,12 +81,8 @@ export class SysmaraRepository<T> {
     });
     const start = Date.now();
 
-    let result: T | null = null;
-
-    if (this.driver) {
-      const qr = await this.driver.query(query.sql, query.params);
-      result = (qr.rows[0] as T | undefined) ?? null;
-    }
+    const qr = await this.driver.query(query.sql, query.params);
+    const result = (qr.rows[0] as T | undefined) ?? null;
 
     this.logOperation(query.operation, query.affected_fields, query.sql, Date.now() - start, result ? 1 : 0);
     return result;
@@ -102,18 +94,21 @@ export class SysmaraRepository<T> {
    * @param filters - Optional partial entity fields to match
    * @returns An array of matching records
    */
-  async findMany(filters?: Partial<T>): Promise<T[]> {
+  async findMany(
+    filters?: Partial<T>,
+    options?: { limit?: number; offset?: number; orderBy?: string; orderDir?: 'ASC' | 'DESC' },
+  ): Promise<T[]> {
     const query = this.queryBuilder.select(this.capability, this.entityName, {
       where: filters as Record<string, unknown> | undefined,
+      limit: options?.limit,
+      offset: options?.offset,
+      orderBy: options?.orderBy,
+      orderDir: options?.orderDir,
     });
     const start = Date.now();
 
-    let results: T[] = [];
-
-    if (this.driver) {
-      const qr = await this.driver.query(query.sql, query.params);
-      results = qr.rows as T[];
-    }
+    const qr = await this.driver.query(query.sql, query.params);
+    const results = qr.rows as T[];
 
     this.logOperation(query.operation, query.affected_fields, query.sql, Date.now() - start, results.length);
     return results;
@@ -133,14 +128,8 @@ export class SysmaraRepository<T> {
     );
     const start = Date.now();
 
-    let result: T;
-
-    if (this.driver) {
-      const qr = await this.driver.query(query.sql, query.params);
-      result = (qr.rows[0] as T | undefined) ?? data as T;
-    } else {
-      result = data as T;
-    }
+    const qr = await this.driver.query(query.sql, query.params);
+    const result = (qr.rows[0] as T | undefined) ?? data as T;
 
     this.logOperation(query.operation, query.affected_fields, query.sql, Date.now() - start, 1);
     return result;
@@ -162,14 +151,8 @@ export class SysmaraRepository<T> {
     );
     const start = Date.now();
 
-    let result: T;
-
-    if (this.driver) {
-      const qr = await this.driver.query(query.sql, query.params);
-      result = (qr.rows[0] as T | undefined) ?? { id, ...data } as T;
-    } else {
-      result = { id, ...data } as T;
-    }
+    const qr = await this.driver.query(query.sql, query.params);
+    const result = (qr.rows[0] as T | undefined) ?? { id, ...data } as T;
 
     this.logOperation(query.operation, query.affected_fields, query.sql, Date.now() - start, 1);
     return result;
@@ -184,9 +167,7 @@ export class SysmaraRepository<T> {
     const query = this.queryBuilder.delete(this.capability, this.entityName, id);
     const start = Date.now();
 
-    if (this.driver) {
-      await this.driver.query(query.sql, query.params);
-    }
+    await this.driver.query(query.sql, query.params);
 
     this.logOperation(query.operation, query.affected_fields, query.sql, Date.now() - start, 1);
   }

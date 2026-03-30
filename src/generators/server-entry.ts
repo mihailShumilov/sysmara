@@ -38,6 +38,18 @@ function inferRoute(cap: CapabilitySpec): { method: string; path: string } {
   if (name.startsWith('assign_') || name.startsWith('complete_')) {
     return { method: 'PATCH', path: `${basePath}/:id` };
   }
+  // Status transitions: publish, archive, approve, reject, submit, moderate, flag, suspend, activate, close, reopen, cancel, verify, ban, unban, lock, unlock, pin, unpin, feature, unfeature, hide, unhide
+  const statusVerbs = ['publish_', 'archive_', 'approve_', 'reject_', 'submit_', 'moderate_', 'flag_', 'suspend_', 'activate_', 'close_', 'reopen_', 'cancel_', 'verify_', 'ban_', 'unban_', 'lock_', 'unlock_', 'pin_', 'unpin_', 'feature_', 'unfeature_', 'hide_', 'unhide_'];
+  if (statusVerbs.some((v) => name.startsWith(v))) {
+    const verb = name.split('_')[0];
+    return { method: 'PATCH', path: `${basePath}/:id/${verb}` };
+  }
+  // Association operations: tag, untag, link, unlink, invite, kick, assign, unassign
+  const assocVerbs = ['tag_', 'untag_', 'link_', 'unlink_', 'invite_', 'kick_'];
+  if (assocVerbs.some((v) => name.startsWith(v))) {
+    const verb = name.split('_')[0];
+    return { method: 'POST', path: `${basePath}/:id/${verb}` };
+  }
   if (name.startsWith('delete_') || name.startsWith('remove_') || name.startsWith('deactivate_')) {
     return { method: 'DELETE', path: `${basePath}/:id` };
   }
