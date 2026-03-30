@@ -342,6 +342,7 @@ export class MigrationEngine {
       affectedCapabilities: plan.affectedCapabilities,
       affectedRoutes: [],
       affectedFlows,
+      affectedFiles: [],
       affectedTests,
       generatedArtifacts,
     };

@@ -12,6 +12,7 @@ function makeImpact(overrides: Partial<ImpactSurface> = {}): ImpactSurface {
     affectedCapabilities: [],
     affectedRoutes: ['POST /users'],
     affectedFlows: ['user_registration'],
+    affectedFiles: [],
     affectedTests: ['tests/capabilities/create_user.test.ts'],
     generatedArtifacts: ['generated/capability/create_user.ts'],
     ...overrides,

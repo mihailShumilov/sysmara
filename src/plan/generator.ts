@@ -113,7 +113,7 @@ function classifyRisk(
  */
 function collectAffectedItems(
   impacts: ImpactSurface[],
-  field: 'affectedModules' | 'affectedInvariants' | 'affectedPolicies' | 'affectedCapabilities' | 'affectedRoutes' | 'affectedFlows',
+  field: 'affectedModules' | 'affectedInvariants' | 'affectedPolicies' | 'affectedCapabilities' | 'affectedRoutes' | 'affectedFlows' | 'affectedFiles',
   targetNames: Set<string>,
 ): AffectedItem[] {
   const seen = new Set<string>();

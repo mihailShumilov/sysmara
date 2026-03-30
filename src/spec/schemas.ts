@@ -270,6 +270,7 @@ export const impactSurfaceSchema = z.object({
   affectedCapabilities: z.array(z.string()),
   affectedRoutes: z.array(z.string()),
   affectedFlows: z.array(z.string()),
+  affectedFiles: z.array(z.string()),
   affectedTests: z.array(z.string()),
   generatedArtifacts: z.array(z.string()),
 });

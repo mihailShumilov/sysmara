@@ -471,6 +471,7 @@ export interface ImpactSurface {
   affectedCapabilities: string[];
   affectedRoutes: string[];
   affectedFlows: string[];
+  affectedFiles: string[];
   affectedTests: string[];
   generatedArtifacts: string[];
 }

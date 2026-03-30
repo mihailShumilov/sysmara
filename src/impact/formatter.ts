@@ -44,6 +44,7 @@ export function formatImpactTerminal(impact: ImpactSurface): string {
     ['Affected Policies', impact.affectedPolicies],
     ['Affected Routes', impact.affectedRoutes],
     ['Affected Flows', impact.affectedFlows],
+    ['Affected Files', impact.affectedFiles],
     ['Tests Likely Affected', impact.affectedTests],
     ['Generated Artifacts', impact.generatedArtifacts],
   ];
@@ -66,7 +67,8 @@ export function formatImpactTerminal(impact: ImpactSurface): string {
     impact.affectedInvariants.length +
     impact.affectedPolicies.length +
     impact.affectedRoutes.length +
-    impact.affectedFlows.length;
+    impact.affectedFlows.length +
+    impact.affectedFiles.length;
 
   lines.push(SEP);
   lines.push(`  Total Impact Radius: ${totalAffected} nodes`);
