@@ -26,7 +26,7 @@ import { commandScaffold } from './commands/scaffold.js';
 import { commandStart } from './commands/start.js';
 
 /** Current CLI version string, displayed by `--version`. */
-const VERSION = '0.7.0';
+const VERSION = '0.8.0';
 
 /**
  * Prints the CLI usage information, listing all available commands and options,

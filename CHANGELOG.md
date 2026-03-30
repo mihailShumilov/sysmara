@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] — 2026-03-30
+
+### Fixed
+
+- **List handlers use `ctx.query` instead of `ctx.body`**: scaffolded list_* capability handlers now read filters from query parameters (GET requests have no body)
+- **Policy violations return 403 instead of 500**: scaffolded policy enforcement now throws `ForbiddenError` (HTTP 403) instead of generic `Error` (which was caught as 500 INTERNAL_ERROR)
+- **Generated server.ts parses real specs**: the generated `app/server.ts` entry point now calls `parseSpecDirectory()` and passes real specs to the ORM constructor instead of empty arrays
+- **CLI version synced with package.json**: CLI `--version` now reports the correct version
+
+### Added
+
+- **Header-based actor extraction**: both `sysmara start` and the generated `app/server.ts` now extract actor identity from `X-Actor-Id` and `X-Actor-Roles` HTTP headers (previously all requests were anonymous)
+- **Status transition capability scaffolding**: operations like `publish_post`, `archive_post`, `submit_post_for_review`, `approve_comment`, `reject_comment`, `flag_content` now generate proper status-transition logic (find entity, update status field) instead of falling through to a read-only `findById`
+- **Association capability scaffolding**: operations like `tag_post`, `untag_post` now generate proper create/delete logic on the association entity instead of incorrect `findById` calls
+- **Expanded operation inference**: `inferOperation()` now recognizes 20+ verb prefixes for status transitions (`publish_`, `archive_`, `approve_`, `reject_`, `submit_`, `moderate_`, `flag_`, etc.) and association operations (`tag_`, `untag_`, `link_`, `unlink_`, `invite_`, `kick_`)
+
 ## [0.7.2] — 2026-03-21
 
 ### Added

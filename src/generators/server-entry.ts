@@ -102,15 +102,38 @@ export function generateServerEntry(
 // Re-generate with: sysmara build
 // ============================================================
 
-import { SysmaraServer, SysmaraORM, resolveConfig } from '@sysmara/core';
-import type { DatabaseAdapterConfig } from '@sysmara/core';
+import { SysmaraServer, SysmaraORM, resolveConfig, parseSpecDirectory } from '@sysmara/core';
+import type { DatabaseAdapterConfig, ActorContext } from '@sysmara/core';
+import type { IncomingMessage } from 'node:http';
+import * as path from 'node:path';
 
 // Import capability handlers
 ${capImports}
 
+/**
+ * Extract actor identity from HTTP headers.
+ * Send X-Actor-Id and X-Actor-Roles headers to authenticate.
+ * Without these headers, requests are treated as anonymous.
+ */
+function headerActorExtractor(req: IncomingMessage): Promise<ActorContext> {
+  const id = (req.headers['x-actor-id'] as string) ?? 'anonymous';
+  const rolesHeader = (req.headers['x-actor-roles'] as string) ?? '';
+  const roles = rolesHeader ? rolesHeader.split(',').map(r => r.trim()) : [];
+  return Promise.resolve({ id, roles, attributes: {} });
+}
+
 async function main(): Promise<void> {
   // Load config
   const config = resolveConfig();
+
+  // Parse specs to pass to ORM for schema generation
+  const specDir = path.resolve(process.cwd(), config.specDir ?? 'system');
+  const parsed = await parseSpecDirectory(specDir);
+  if (!parsed.specs) {
+    console.error('Failed to parse specs. Run "sysmara validate" for details.');
+    process.exit(1);
+  }
+  const specs = parsed.specs;
 
   // Database configuration
   const dbConfig: DatabaseAdapterConfig = config.database ?? {
@@ -119,21 +142,18 @@ async function main(): Promise<void> {
     connectionString: '${connStr}',
   };
 
-  // Initialize ORM
-  const orm = new SysmaraORM(dbConfig, {
-    entities: [], capabilities: [], policies: [], invariants: [],
-    modules: [], flows: [], safeEditZones: [], glossary: [],
-  });
+  // Initialize ORM with real specs
+  const orm = new SysmaraORM(dbConfig, specs);
   await orm.connect();
   await orm.applySchema();
 
   // Inject ORM into capability handlers
 ${ormSetters}
 
-  // Create server
+  // Create server with header-based actor extraction
   const port = config.port ?? ${port};
   const host = config.host ?? '0.0.0.0';
-  const server = new SysmaraServer({ port, host });
+  const server = new SysmaraServer({ port, host, actorExtractor: headerActorExtractor });
 
   // Register routes
 ${routeRegistrations}

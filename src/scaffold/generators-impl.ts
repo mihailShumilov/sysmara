@@ -18,14 +18,58 @@ import { toPascalCase, toCamelCase, mapFieldType } from './type-utils.js';
 /**
  * Infers the CRUD operation type from a capability name.
  */
-function inferOperation(name: string): 'create' | 'read' | 'update' | 'delete' | 'list' {
+type OperationType = 'create' | 'read' | 'update' | 'delete' | 'list' | 'status_transition' | 'associate' | 'dissociate';
+
+function inferOperation(name: string): OperationType {
   const n = name.toLowerCase();
   if (n.startsWith('create_') || n.startsWith('add_') || n.startsWith('register_')) return 'create';
   if (n.startsWith('list_') || n.startsWith('get_all_') || n.startsWith('search_')) return 'list';
-  if (n.startsWith('update_') || n.startsWith('edit_') || n.startsWith('modify_') || n.startsWith('assign_') || n.startsWith('complete_')) return 'update';
+  if (n.startsWith('update_') || n.startsWith('edit_') || n.startsWith('modify_')) return 'update';
   if (n.startsWith('delete_') || n.startsWith('remove_') || n.startsWith('deactivate_')) return 'delete';
   if (n.startsWith('get_') || n.startsWith('find_') || n.startsWith('fetch_')) return 'read';
+
+  // Status transition operations
+  if (n.startsWith('publish_') || n.startsWith('archive_') || n.startsWith('activate_')
+    || n.startsWith('suspend_') || n.startsWith('close_') || n.startsWith('reopen_')
+    || n.startsWith('approve_') || n.startsWith('reject_') || n.startsWith('cancel_')
+    || n.startsWith('complete_') || n.startsWith('assign_')
+    || n.startsWith('submit_') || n.startsWith('moderate_') || n.startsWith('flag_')
+    || n.startsWith('unflag_') || n.startsWith('verify_') || n.startsWith('block_')
+    || n.startsWith('unblock_')) return 'status_transition';
+
+  // Association operations (tag_post, untag_post, add_member, etc.)
+  if (n.startsWith('tag_') || n.startsWith('link_') || n.startsWith('invite_')) return 'associate';
+  if (n.startsWith('untag_') || n.startsWith('unlink_') || n.startsWith('kick_')) return 'dissociate';
+
   return 'read';
+}
+
+/**
+ * Infers the target status from a capability name for status transition operations.
+ * E.g., publish_post → 'published', archive_post → 'archived', submit_post_for_review → 'in_review'
+ */
+function inferTargetStatus(name: string): string {
+  const n = name.toLowerCase();
+  if (n.startsWith('publish_')) return 'published';
+  if (n.startsWith('archive_')) return 'archived';
+  if (n.startsWith('activate_')) return 'active';
+  if (n.startsWith('suspend_')) return 'suspended';
+  if (n.startsWith('close_')) return 'closed';
+  if (n.startsWith('reopen_')) return 'open';
+  if (n.startsWith('approve_')) return 'approved';
+  if (n.startsWith('reject_')) return 'rejected';
+  if (n.startsWith('cancel_')) return 'cancelled';
+  if (n.startsWith('complete_')) return 'completed';
+  if (n.startsWith('flag_')) return 'flagged';
+  if (n.startsWith('unflag_')) return 'approved';
+  if (n.startsWith('verify_')) return 'verified';
+  if (n.startsWith('block_')) return 'blocked';
+  if (n.startsWith('unblock_')) return 'active';
+  if (n.includes('_for_review')) return 'in_review';
+  if (n.startsWith('submit_')) return 'submitted';
+  if (n.startsWith('moderate_')) return 'moderated';
+  if (n.startsWith('assign_')) return 'assigned';
+  return 'updated';
 }
 
 /**
@@ -143,12 +187,15 @@ export function generateCapabilityImpl(
 
   const allImports = [entityImport, policyImports, invariantImports].filter(Boolean).join('\n');
 
-  // Policy enforcement code
+  // Policy enforcement code — throws ForbiddenError (HTTP 403) on violation
   const policyCode = capability.policies.length > 0
     ? capability.policies
-        .map((p) => `  if (!enforce${toPascalCase(p)}(ctx.actor)) {\n    throw new Error('Policy violation: ${p}');\n  }`)
+        .map((p) => `  if (!enforce${toPascalCase(p)}(ctx.actor)) {\n    throw new ForbiddenError('Policy violation: ${p}');\n  }`)
         .join('\n') + '\n\n'
     : '';
+
+  // Track whether we need ForbiddenError import
+  const needsForbiddenImport = capability.policies.length > 0;
 
   // Invariant validation code (for create/update)
   const invariantCode = (op === 'create' || op === 'update') && capability.invariants.length > 0
@@ -179,11 +226,13 @@ ${invariantCode}
   return result as unknown as ${pascal}Output;`;
       break;
     case 'list':
-      body = `${policyCode}  // List ${primaryEntity} records
+      body = `${policyCode}  // List ${primaryEntity} records (use query params for GET requests)
   const repo = orm.repository<${entityPascal}>('${primaryEntity}', '${capability.name}');
-  const results = await repo.findMany(input as unknown as Partial<${entityPascal}>);
+  const filters = ctx.query as unknown as Partial<${entityPascal}>;
+  const hasFilters = Object.keys(filters).length > 0;
+  const results = await repo.findMany(hasFilters ? filters : undefined);
 
-  return { items: results } as unknown as ${pascal}Output;`;
+  return { items: results, count: results.length } as unknown as ${pascal}Output;`;
       break;
     case 'update':
       body = `${policyCode}  // Update ${primaryEntity}
@@ -200,6 +249,53 @@ ${invariantCode}
 
   return { success: true } as unknown as ${pascal}Output;`;
       break;
+    case 'status_transition': {
+      const targetStatus = inferTargetStatus(capability.name);
+      body = `${policyCode}  // Status transition: set ${primaryEntity}.status to '${targetStatus}'
+  const repo = orm.repository<${entityPascal}>('${primaryEntity}', '${capability.name}');
+  const id = (input as Record<string, unknown>).id as string ?? ctx.params.id;
+  const existing = await repo.findById(id);
+  if (!existing) {
+    throw new NotFoundError('${entityPascal} not found');
+  }
+
+  const result = await repo.update(id, { status: '${targetStatus}' } as unknown as Partial<${entityPascal}>);
+${invariantCode}
+  return result as unknown as ${pascal}Output;`;
+      break;
+    }
+    case 'associate': {
+      // For operations like tag_post — create an association record
+      const associationEntity = (capability.entities.length > 1 ? capability.entities[1] : capability.entities[0]) ?? primaryEntity;
+      const assocPascal = toPascalCase(associationEntity);
+      body = `${policyCode}  // Create association record in ${associationEntity}
+  const repo = orm.repository<${assocPascal}>('${associationEntity}', '${capability.name}');
+  const result = await repo.create(input as unknown as Partial<${assocPascal}>);
+
+  return result as unknown as ${pascal}Output;`;
+      break;
+    }
+    case 'dissociate': {
+      const associationEntity = (capability.entities.length > 1 ? capability.entities[1] : capability.entities[0]) ?? primaryEntity;
+      const assocPascal = toPascalCase(associationEntity);
+      body = `${policyCode}  // Remove association record from ${associationEntity}
+  const repo = orm.repository<${assocPascal}>('${associationEntity}', '${capability.name}');
+  const id = (input as Record<string, unknown>).id as string ?? ctx.params.id;
+  await repo.delete(id);
+
+  return { success: true } as unknown as ${pascal}Output;`;
+      break;
+    }
+  }
+
+  // Build core framework imports
+  const coreImports = ['SysmaraORM'];
+  const coreTypeImports = ['HandlerContext'];
+  if (needsForbiddenImport) {
+    coreImports.push('ForbiddenError');
+  }
+  if (op === 'status_transition') {
+    coreImports.push('NotFoundError');
   }
 
   return `// ============================================================
@@ -208,8 +304,8 @@ ${invariantCode}
 // Source: system/capabilities.yaml
 // ============================================================
 
-import type { HandlerContext } from '@sysmara/core';
-import { SysmaraORM } from '@sysmara/core';
+import type { ${coreTypeImports.join(', ')} } from '@sysmara/core';
+import { ${coreImports.join(', ')} } from '@sysmara/core';
 import type { ${pascal}Input, ${pascal}Output } from '../generated/routes/${capability.name}.js';
 ${allImports}
 
@@ -440,6 +536,21 @@ export function generateServiceImpl(
         case 'delete':
           body = `    const repo = this.orm.repository<Record<string, unknown>>('${primaryEntity}', '${capName}');\n    return repo.delete((input as Record<string, string>).id);`;
           break;
+        case 'status_transition': {
+          const targetStatus = inferTargetStatus(capName);
+          body = `    const repo = this.orm.repository<Record<string, unknown>>('${primaryEntity}', '${capName}');\n    const id = (input as Record<string, string>).id;\n    return repo.update(id, { status: '${targetStatus}' });`;
+          break;
+        }
+        case 'associate': {
+          const assocEntity = cap?.entities[1] ?? primaryEntity;
+          body = `    const repo = this.orm.repository<Record<string, unknown>>('${assocEntity}', '${capName}');\n    return repo.create(input as Partial<Record<string, unknown>>);`;
+          break;
+        }
+        case 'dissociate': {
+          const assocEntity = cap?.entities[1] ?? primaryEntity;
+          body = `    const repo = this.orm.repository<Record<string, unknown>>('${assocEntity}', '${capName}');\n    return repo.delete((input as Record<string, string>).id);`;
+          break;
+        }
       }
 
       return `

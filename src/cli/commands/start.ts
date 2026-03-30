@@ -6,13 +6,25 @@
  */
 
 import * as path from 'node:path';
-import type { SysmaraConfig, HandlerContext, CapabilitySpec, SystemSpecs, EntitySpec } from '../../types/index.js';
+import type { IncomingMessage } from 'node:http';
+import type { SysmaraConfig, HandlerContext, CapabilitySpec, SystemSpecs, EntitySpec, ActorContext } from '../../types/index.js';
 import { parseSpecDirectory } from '../../spec/index.js';
 import { SysmaraServer } from '../../runtime/server.js';
 import { SysmaraORM } from '../../database/adapters/sysmara-orm/orm.js';
 import type { DatabaseAdapterConfig, DatabaseProvider } from '../../database/adapter.js';
 import type { AdapterName } from '../../database/adapter.js';
 import { header, success, error, info } from '../format.js';
+
+/**
+ * Extract actor identity from HTTP headers.
+ * Reads X-Actor-Id and X-Actor-Roles from the request.
+ */
+function headerActorExtractor(req: IncomingMessage): Promise<ActorContext> {
+  const id = (req.headers['x-actor-id'] as string) ?? 'anonymous';
+  const rolesHeader = (req.headers['x-actor-roles'] as string) ?? '';
+  const roles = rolesHeader ? rolesHeader.split(',').map(r => r.trim()) : [];
+  return Promise.resolve({ id, roles, attributes: {} });
+}
 
 /**
  * Infers the HTTP method and URL path from a capability name and its entities.
@@ -58,15 +70,59 @@ function inferRoute(cap: CapabilitySpec): { method: string; path: string } {
 }
 
 /**
- * Infers the CRUD operation from a capability name.
+ * Infers the operation type from a capability name.
  */
-function inferOperation(name: string): 'create' | 'read' | 'list' | 'update' | 'delete' {
+type OperationType = 'create' | 'read' | 'list' | 'update' | 'delete' | 'status_transition' | 'associate' | 'dissociate';
+
+function inferOperation(name: string): OperationType {
   const n = name.toLowerCase();
   if (n.startsWith('create_') || n.startsWith('add_') || n.startsWith('register_')) return 'create';
   if (n.startsWith('list_') || n.startsWith('get_all_') || n.startsWith('search_')) return 'list';
-  if (n.startsWith('update_') || n.startsWith('edit_') || n.startsWith('modify_') || n.startsWith('assign_') || n.startsWith('complete_')) return 'update';
+  if (n.startsWith('update_') || n.startsWith('edit_') || n.startsWith('modify_')) return 'update';
   if (n.startsWith('delete_') || n.startsWith('remove_') || n.startsWith('deactivate_')) return 'delete';
+  if (n.startsWith('get_') || n.startsWith('find_') || n.startsWith('fetch_')) return 'read';
+
+  // Status transition operations
+  if (n.startsWith('publish_') || n.startsWith('archive_') || n.startsWith('activate_')
+    || n.startsWith('suspend_') || n.startsWith('close_') || n.startsWith('reopen_')
+    || n.startsWith('approve_') || n.startsWith('reject_') || n.startsWith('cancel_')
+    || n.startsWith('complete_') || n.startsWith('assign_')
+    || n.startsWith('submit_') || n.startsWith('moderate_') || n.startsWith('flag_')
+    || n.startsWith('unflag_') || n.startsWith('verify_') || n.startsWith('block_')
+    || n.startsWith('unblock_')) return 'status_transition';
+
+  // Association operations
+  if (n.startsWith('tag_') || n.startsWith('link_') || n.startsWith('invite_')) return 'associate';
+  if (n.startsWith('untag_') || n.startsWith('unlink_') || n.startsWith('kick_')) return 'dissociate';
+
   return 'read';
+}
+
+/**
+ * Infers the target status from a capability name.
+ */
+function inferTargetStatus(name: string): string {
+  const n = name.toLowerCase();
+  if (n.startsWith('publish_')) return 'published';
+  if (n.startsWith('archive_')) return 'archived';
+  if (n.startsWith('activate_')) return 'active';
+  if (n.startsWith('suspend_')) return 'suspended';
+  if (n.startsWith('close_')) return 'closed';
+  if (n.startsWith('reopen_')) return 'open';
+  if (n.startsWith('approve_')) return 'approved';
+  if (n.startsWith('reject_')) return 'rejected';
+  if (n.startsWith('cancel_')) return 'cancelled';
+  if (n.startsWith('complete_')) return 'completed';
+  if (n.startsWith('flag_')) return 'flagged';
+  if (n.startsWith('unflag_')) return 'approved';
+  if (n.startsWith('verify_')) return 'verified';
+  if (n.startsWith('block_')) return 'blocked';
+  if (n.startsWith('unblock_')) return 'active';
+  if (n.includes('_for_review')) return 'in_review';
+  if (n.startsWith('submit_')) return 'submitted';
+  if (n.startsWith('moderate_')) return 'moderated';
+  if (n.startsWith('assign_')) return 'assigned';
+  return 'updated';
 }
 
 /**
@@ -192,6 +248,38 @@ function createCapabilityHandler(
         await repo.delete(id);
         return { success: true, deleted: id };
       }
+      case 'status_transition': {
+        const id = ctx.params.id ?? ((ctx.body as Record<string, unknown>)?.id as string);
+        if (!id) {
+          return { error: { code: 'BAD_REQUEST', message: 'Missing id parameter', capability: cap.name } };
+        }
+        const existing = await repo.findById(id);
+        if (!existing) {
+          return { error: { code: 'NOT_FOUND', message: `${primaryEntity} not found`, capability: cap.name } };
+        }
+        const targetStatus = inferTargetStatus(cap.name);
+        const extraData = (ctx.body ?? {}) as Record<string, unknown>;
+        delete extraData.id;
+        const result = await repo.update(id, { ...extraData, status: targetStatus });
+        return result;
+      }
+      case 'associate': {
+        const assocEntity = (cap.entities.length > 1 ? cap.entities[1] : primaryEntity) as string;
+        const assocRepo = orm.repository<Record<string, unknown>>(assocEntity, cap.name);
+        const input = (ctx.body ?? {}) as Record<string, unknown>;
+        const result = await assocRepo.create(input);
+        return result;
+      }
+      case 'dissociate': {
+        const assocEntity = (cap.entities.length > 1 ? cap.entities[1] : primaryEntity) as string;
+        const assocRepo = orm.repository<Record<string, unknown>>(assocEntity, cap.name);
+        const id = ctx.params.id ?? ((ctx.body as Record<string, unknown>)?.id as string);
+        if (!id) {
+          return { error: { code: 'BAD_REQUEST', message: 'Missing id parameter', capability: cap.name } };
+        }
+        await assocRepo.delete(id);
+        return { success: true, deleted: id };
+      }
     }
   };
 }
@@ -248,7 +336,7 @@ export async function commandStart(
   // 4. Create server
   const port = flags.port ? parseInt(flags.port, 10) : config.port;
   const host = flags.host ?? config.host;
-  const server = new SysmaraServer({ port, host });
+  const server = new SysmaraServer({ port, host, actorExtractor: headerActorExtractor });
 
   // 5. Auto-wire capability routes
   console.log('\n  Registering routes...');

@@ -457,7 +457,7 @@ invariants:
     message: A user with this email already exists
 ```
 
-## v0.7.0 Status
+## v0.8.0 Status
 
 ### Production-Ready
 
@@ -467,16 +467,17 @@ invariants:
 - System map generation (AI-facing module index)
 - Diagnostics engine with 20+ validation checks
 - Capability compiler with route handler and test scaffold generation
-- **Scaffold generator** — starter entity/capability/policy/invariant/service files from specs
+- **Scaffold generator** — starter entity/capability/policy/invariant/service files from specs (with proper status-transition and association logic)
 - Module boundary enforcement
 - Invariant resolution engine
 - Safe edit zone validation
-- HTTP runtime with typed handlers
+- HTTP runtime with typed handlers and **header-based actor extraction** (`X-Actor-Id`, `X-Actor-Roles`)
 - Change Plan Protocol with risk classification and impact analysis
 - CLI commands: init, add, build, graph, compile, scaffold, start, doctor, explain, impact, plan, check boundaries, db, flow
 - **`sysmara start`** — auto-wires all capabilities to HTTP routes, connects to DB, applies schema, starts server
 - **Real database drivers** — PostgreSQL (`pg`), MySQL (`mysql2`), SQLite (`better-sqlite3`), in-memory fallback
 - **Server entry point generation** — `sysmara build` generates `app/server.ts` with all routes wired
+- **Proper error mapping** — policy violations return 403, not found returns 404, validation returns 400
 - Database adapter interface and registry
 - Prisma adapter (schema + repository generation)
 - Drizzle adapter (TypeScript-first schema)
