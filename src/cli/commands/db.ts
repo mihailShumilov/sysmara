@@ -5,12 +5,47 @@
  * files, migrations, and status reports.
  */
 
+import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import type { SysmaraConfig } from '../../types/index.js';
 import { parseSpecDirectory } from '../../spec/index.js';
 import { getAdapter, listAdapters } from '../../database/index.js';
 import type { AdapterName } from '../../database/index.js';
 import { header, success, error, info, bullet, section } from '../format.js';
+
+/**
+ * Resolves where generated database files should be written.
+ *
+ * Resolution order:
+ *  1. `database.outputDir` in `sysmara.config.yaml` (explicit, preferred).
+ *  2. `generatedDir` from the project config (default for compiler artifacts).
+ *
+ * The path is always resolved relative to `cwd`.
+ *
+ * @param cwd - Current working directory
+ * @param config - Resolved project configuration
+ * @returns Absolute path to the database output directory
+ */
+function resolveDbOutputDir(cwd: string, config: SysmaraConfig): string {
+  const target = config.database?.outputDir ?? config.generatedDir;
+  return path.resolve(cwd, target);
+}
+
+/**
+ * Writes a generated file to disk under the given root, creating any
+ * missing parent directories.
+ *
+ * @param rootDir - Absolute base directory the file path is relative to
+ * @param relPath - Path of the file relative to `rootDir`
+ * @param content - File contents (UTF-8)
+ * @returns The absolute path the file was written to
+ */
+async function writeGeneratedFile(rootDir: string, relPath: string, content: string): Promise<string> {
+  const filePath = path.join(rootDir, relPath);
+  await fs.mkdir(path.dirname(filePath), { recursive: true });
+  await fs.writeFile(filePath, content, 'utf-8');
+  return filePath;
+}
 
 /**
  * Handles `sysmara db generate` — generates database schema files
@@ -52,14 +87,34 @@ export async function commandDbGenerate(
   }
   const files = adapter.generateSchema(result.specs);
 
+  // Materialise generated schema to disk under database.outputDir (preferred)
+  // or generatedDir as a fallback. This is what users expect from a
+  // command named `db generate` — JSON-mode previously returned the content
+  // but no files were ever written.
+  const outputDir = resolveDbOutputDir(cwd, config);
+  const writtenPaths: string[] = [];
+  if (files.length > 0) {
+    await fs.mkdir(outputDir, { recursive: true });
+    for (const file of files) {
+      const written = await writeGeneratedFile(outputDir, file.path, file.content);
+      writtenPaths.push(written);
+    }
+  }
+
   if (jsonMode) {
-    console.log(JSON.stringify({ adapter: adapter.name, files }, null, 2));
+    console.log(JSON.stringify({
+      adapter: adapter.name,
+      outputDir,
+      written: writtenPaths,
+      files,
+    }, null, 2));
     return;
   }
 
   console.log(header('Database Schema Generation'));
-  console.log(info(`Adapter: ${adapter.name}`));
-  console.log(info(`Provider: ${dbConfig.provider}`));
+  console.log(info(`Adapter:    ${adapter.name}`));
+  console.log(info(`Provider:   ${dbConfig.provider}`));
+  console.log(info(`Output dir: ${path.relative(cwd, outputDir) || '.'}`));
   console.log(section('Generated Files'));
 
   if (files.length === 0) {
@@ -118,13 +173,29 @@ export async function commandDbMigrate(
 
   const files = adapter.generateMigration(emptySpecs, specs);
 
+  const outputDir = resolveDbOutputDir(cwd, config);
+  const writtenPaths: string[] = [];
+  if (files.length > 0) {
+    await fs.mkdir(outputDir, { recursive: true });
+    for (const file of files) {
+      const written = await writeGeneratedFile(outputDir, file.path, file.content);
+      writtenPaths.push(written);
+    }
+  }
+
   if (jsonMode) {
-    console.log(JSON.stringify({ adapter: adapter.name, files }, null, 2));
+    console.log(JSON.stringify({
+      adapter: adapter.name,
+      outputDir,
+      written: writtenPaths,
+      files,
+    }, null, 2));
     return;
   }
 
   console.log(header('Database Migration'));
-  console.log(info(`Adapter: ${adapter.name}`));
+  console.log(info(`Adapter:    ${adapter.name}`));
+  console.log(info(`Output dir: ${path.relative(cwd, outputDir) || '.'}`));
   console.log(section('Migration Files'));
 
   if (files.length === 0) {
