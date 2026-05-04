@@ -9,6 +9,65 @@
 import type { SystemSpecs, EntitySpec, EntityField, FieldConstraint } from '../../../types/index.js';
 import type { DatabaseProvider } from '../../adapter.js';
 
+// ── Field-name and description heuristics ────────────────────
+
+/**
+ * Returns true when a field's description suggests it stores JSON.
+ *
+ * Triggers on phrases like "JSON —", "JSON-encoded", "JSONB", "Record<…>",
+ * or arrays-of-objects ("string[]", "object[]"). This lets users keep
+ * `type: string` in their specs (the safe lowest-common-denominator type) while
+ * still getting JSONB columns on postgres / JSON on mysql.
+ */
+function isJsonDescription(description?: string): boolean {
+  if (!description) return false;
+  return (
+    /(^|\s)(JSONB?)\b/i.test(description) ||
+    /JSON-encoded|JSON\s*[—-]|^\s*JSON\b/i.test(description) ||
+    /\bRecord<[^>]+>/.test(description) ||
+    /\b(?:string|number|object|boolean)\s*\[\]/.test(description)
+  );
+}
+
+/**
+ * Long-form text fields by convention. These should default to TEXT instead
+ * of VARCHAR(255) so a 1KB description, audit recommendation, or markdown
+ * body isn't silently truncated at row insert time.
+ */
+const LONG_TEXT_NAMES = new Set([
+  'description', 'content', 'body', 'note', 'notes', 'bio', 'comment',
+  'comments', 'message', 'text', 'html', 'markdown', 'recommendation',
+  'summary', 'excerpt', 'about',
+]);
+const LONG_TEXT_SUFFIX_RE = /_(?:html|md|markdown|content|body|description|text|notes?)$/;
+
+function isLongTextField(name: string): boolean {
+  const n = name.toLowerCase();
+  return LONG_TEXT_NAMES.has(n) || LONG_TEXT_SUFFIX_RE.test(n);
+}
+
+/**
+ * Pull a numeric `maxLength` constraint off a field if present so we can
+ * size VARCHAR exactly to the user's intent (e.g. `maxLength: 320` for
+ * RFC-compliant emails → VARCHAR(320)).
+ */
+function getMaxLength(constraints?: FieldConstraint[]): number | undefined {
+  const c = constraints?.find((x) => x.type === 'maxLength');
+  if (!c) return undefined;
+  const v = typeof c.value === 'string' ? Number(c.value) : c.value;
+  return typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : undefined;
+}
+
+/**
+ * Treats `created_at` / `updated_at` / `deleted_at` / any `*_at` field
+ * declared as `type: date` as a timestamp. The init template uses
+ * `type: date` for those and users rarely realise the produced column
+ * is a calendar `DATE` (no time component) rather than a true timestamp.
+ */
+function isTimestampLikeName(name: string): boolean {
+  return /_at$/.test(name) || name === 'created_at' || name === 'updated_at' || name === 'deleted_at';
+}
+
 /**
  * Maps a SysMARA field type to a PostgreSQL column type.
  *
@@ -17,9 +76,19 @@ import type { DatabaseProvider } from '../../adapter.js';
  */
 function mapPostgresType(field: EntityField): string {
   if (field.name === 'id') return 'UUID';
+
+  // Description-flagged JSON wins regardless of declared type.
+  if (field.type.toLowerCase() === 'string' && isJsonDescription(field.description)) {
+    return 'JSONB';
+  }
+
   switch (field.type.toLowerCase()) {
-    case 'string':
+    case 'string': {
+      const max = getMaxLength(field.constraints);
+      if (max && max <= 65535) return `VARCHAR(${max})`;
+      if (isLongTextField(field.name)) return 'TEXT';
       return 'VARCHAR(255)';
+    }
     case 'text':
       return 'TEXT';
     case 'number':
@@ -33,7 +102,7 @@ function mapPostgresType(field: EntityField): string {
     case 'bool':
       return 'BOOLEAN';
     case 'date':
-      return 'DATE';
+      return isTimestampLikeName(field.name) ? 'TIMESTAMPTZ' : 'DATE';
     case 'datetime':
     case 'timestamp':
       return 'TIMESTAMPTZ';
@@ -58,9 +127,18 @@ function mapPostgresType(field: EntityField): string {
  */
 function mapMysqlType(field: EntityField): string {
   if (field.name === 'id') return 'CHAR(36)';
+
+  if (field.type.toLowerCase() === 'string' && isJsonDescription(field.description)) {
+    return 'JSON';
+  }
+
   switch (field.type.toLowerCase()) {
-    case 'string':
+    case 'string': {
+      const max = getMaxLength(field.constraints);
+      if (max && max <= 65535) return `VARCHAR(${max})`;
+      if (isLongTextField(field.name)) return 'TEXT';
       return 'VARCHAR(255)';
+    }
     case 'text':
       return 'TEXT';
     case 'number':
@@ -74,7 +152,7 @@ function mapMysqlType(field: EntityField): string {
     case 'bool':
       return 'TINYINT(1)';
     case 'date':
-      return 'DATE';
+      return isTimestampLikeName(field.name) ? 'DATETIME(3)' : 'DATE';
     case 'datetime':
     case 'timestamp':
       return 'DATETIME(3)';
